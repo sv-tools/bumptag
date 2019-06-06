@@ -23,5 +23,24 @@ jobs:
     - name: "govet"
       script: go vet ./...
     - stage: deploy
+      name: "Update goreportcard"
       script: curl --fail --request POST "https://goreportcard.com/checks" --data "repo=github.com/SVilgelm/bumpversion"
       if: branch = master AND type = push
+    - stage: deploy
+      name: "Upload binaries"
+      if: tag IS present AND type = push
+      script:
+        - mkdir .build
+        - GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=${TRAVIS_TAG}" -o ".build/bumpversion-${TRAVIS_TAG}-linux-amd64"
+        - gzip ".build/bumpversion-${TRAVIS_TAG}-linux-amd64"
+        - GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=${TRAVIS_TAG}" -o ".build/bumpversion-${TRAVIS_TAG}-darwin-amd64"
+        - gzip ".build/bumpversion-${TRAVIS_TAG}-darwin-amd64"
+        - ls -alh .build/
+      deploy:
+        provider: releases
+        api_key: ${GITHUB_TOKEN}
+        on:
+          tags: true
+        skip_cleanup: true
+        file_glob: true
+        file: .build/*
