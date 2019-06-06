@@ -1,0 +1,27 @@
+language: go
+
+
+branches:
+  only:
+    - master
+    - /^(v)?\d+\.\d+\.\d+(-.*)?$/
+
+
+stages:
+  - style
+  - deploy
+
+
+jobs:
+  include:
+    - stage: style
+      name: "gofmt"
+      script: diff -u <(echo -n) <(gofmt -d -s .)
+    - name: "golint"
+      install: go get -u golang.org/x/lint/golint
+      script: golint -set_exit_status ./...
+    - name: "govet"
+      script: go vet ./...
+    - stage: deploy
+      script: curl --fail --request POST "https://goreportcard.com/checks" --data "repo=github.com/SVilgelm/bumpversion"
+      if: branch = master AND type = push
