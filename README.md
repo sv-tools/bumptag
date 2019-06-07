@@ -3,6 +3,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/SVilgelm/bumpversion)](https://goreportcard.com/report/github.com/SVilgelm/bumpversion)
 [![GitHub license](https://img.shields.io/github/license/SVilgelm/bumpversion.svg)](https://github.com/SVilgelm/bumpversion/blob/master/LICENSE)
 [![GitHub release](https://img.shields.io/github/release/SVilgelm/bumpversion.svg)](https://GitHub.com/SVilgelm/bumpversion/releases/)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FSVilgelm%2Fbumpversion.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2FSVilgelm%2Fbumpversion?ref=badge_shield)
 
 bumpversion is a tool to increment a version and to create a git tag with an annotation
 
@@ -47,3 +48,6 @@ $ git push origin --tags
 ## License
 
 MIT licensed. See the bundled [LICENSE](LICENSE) file for more details.
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FSVilgelm%2Fbumpversion.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2FSVilgelm%2Fbumpversion?ref=badge_large)
