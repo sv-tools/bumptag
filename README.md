@@ -8,9 +8,12 @@ bumpversion is a tool to increment a version and to create a git tag with an ann
 
 ## Installation
 
+To install latest master:
 ```go
 go get github.com/SVilgelm/bumpversion
 ```
+
+Or download an executable file: https://github.com/SVilgelm/bumpversion/releases/latest
 
 ## Usage
 
