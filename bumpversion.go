@@ -172,11 +172,12 @@ func makeAnnotation(changeLog []string, tagName string) string {
 func usage() {
 	output := `Usage: bumpversion [<tagname>]
 
-    <tagname>       The name of the tag to create, must be Semantic Versions 2.0.0 (http://semver.org)",
-    -r, --dry-run   Prints an annotation for the new tag",
-    -m, --major     Increment the MAJOR version",
-    -n, --minor     Increment the MINOR version (default)",
-        --version   Show a version of the bumpversion tool",
+    <tagname>       The name of the tag to create, must be Semantic Versions 2.0.0 (http://semver.org)
+    -r, --dry-run   Prints an annotation for the new tag
+    -m, --major     Increment the MAJOR version
+    -n, --minor     Increment the MINOR version (default)
+    -p, --pathc     Increment the PATCH version
+        --version   Show a version of the bumpversion tool
         --find-tag  Show the last tag, can be useful for CI tools`
 	_, _ = fmt.Fprintln(os.Stderr, output)
 }
