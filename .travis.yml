@@ -15,13 +15,8 @@ stages:
 jobs:
   include:
     - stage: style
-      name: "gofmt"
-      script: diff -u <(echo -n) <(gofmt -d -s .)
-    - name: "golint"
-      install: go get -u golang.org/x/lint/golint
-      script: golint -set_exit_status ./...
-    - name: "govet"
-      script: go vet ./...
+      name: "Style check"
+      script: make stylecheck
     - stage: deploy
       name: "Update goreportcard"
       script: curl --fail --request POST "https://goreportcard.com/checks" --data "repo=github.com/SVilgelm/bumpversion"
@@ -30,11 +25,7 @@ jobs:
       name: "Upload binaries"
       if: tag IS present AND type = push
       script:
-        - mkdir .build
-        - GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=${TRAVIS_TAG}" -o ".build/bumpversion-${TRAVIS_TAG}-linux-amd64"
-        - gzip ".build/bumpversion-${TRAVIS_TAG}-linux-amd64"
-        - GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=${TRAVIS_TAG}" -o ".build/bumpversion-${TRAVIS_TAG}-darwin-amd64"
-        - gzip ".build/bumpversion-${TRAVIS_TAG}-darwin-amd64"
+        - make build-all
         - ls -alh .build/
       deploy:
         provider: releases
