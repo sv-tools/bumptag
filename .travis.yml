@@ -1,5 +1,8 @@
 language: go
 
+go:
+  - 1.12.x
+
 
 branches:
   only:
@@ -9,6 +12,7 @@ branches:
 
 stages:
   - style
+  - test
   - deploy
 
 
@@ -17,6 +21,11 @@ jobs:
     - stage: style
       name: "Style check"
       script: make stylecheck
+    - stage: test
+      name: "Unit tests"
+      script: make test
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
     - stage: deploy
       name: "Update goreportcard"
       script: curl --fail --request POST "https://goreportcard.com/checks" --data "repo=github.com/SVilgelm/bumpversion"
