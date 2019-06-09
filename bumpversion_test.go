@@ -441,6 +441,64 @@ func TestCreateFlag(t *testing.T) {
 	assert.Equal(t, 1, cnt)
 }
 
+func TestGetRemote(t *testing.T) {
+	ctrl, tearDown := mockGit(t)
+	defer tearDown()
+
+	ctrl.EXPECT().
+		Git("", "branch", "--list", "-vv").
+		Return("", errors.New("test-error"))
+	output, err := getRemote()
+	assert.Error(t, err)
+	assert.Empty(t, output)
+
+	ctrl.EXPECT().
+		Git("", "branch", "--list", "-vv").
+		Return("", nil)
+	output, err = getRemote()
+	assert.Equal(t, defaultRemote, output)
+
+	ctrl.EXPECT().
+		Git("", "branch", "--list", "-vv").
+		Return(`
+  master       cc51028 [origin/master] Merge pull request #6 from SVilgelm/tests
+* new_features b2fedca Add silent mode`, nil)
+	output, err = getRemote()
+	assert.Error(t, err)
+	assert.Empty(t, output)
+
+	ctrl.EXPECT().
+		Git("", "branch", "--list", "-vv").
+		Return(`
+  master       cc51028 [origin/master] Merge pull request #6 from SVilgelm/tests
+* new_features b2fedca [Add silent mode]`, nil)
+	output, err = getRemote()
+	assert.Error(t, err)
+	assert.Empty(t, output)
+
+	ctrl.EXPECT().
+		Git("", "branch", "--list", "-vv").
+		Return(`
+* master       cc51028 [test-origin/master] Merge pull request #6 from SVilgelm/tests
+  new_features b2fedca [Add silent mode]`, nil)
+	output, err = getRemote()
+	assert.NoError(t, err)
+	assert.Equal(t, "test-origin", output)
+}
+
+func TestPushTag(t *testing.T) {
+	ctrl, tearDown := mockGit(t)
+	defer tearDown()
+
+	ctrl.EXPECT().
+		Git("", "push", "test-remote", "test-tag").
+		Return("", errors.New("test-error"))
+	err := pushTag("test-remote", "test-tag")
+	assert.EqualError(t, err, "test-error")
+}
+
+// Scenarios
+
 func execMain(t testing.TB, arg ...string) (stdout, stderr string) {
 	realCommandLine := flag.CommandLine
 	defer func() {
@@ -471,6 +529,9 @@ func prepareGit(t testing.TB) func() {
 	dir, err := ioutil.TempDir("", "bumpversion")
 	assert.NoError(t, err)
 	t.Logf("Dir: %s", dir)
+	remoteDir, err := ioutil.TempDir("", "bumpversion")
+	assert.NoError(t, err)
+	t.Logf("Remote dir: %s", dir)
 	newGit := func(input string, arg ...string) (string, error) {
 		msg := fmt.Sprintf("git %s", strings.Join(arg, " "))
 		if len(input) > 0 {
@@ -508,8 +569,16 @@ func prepareGit(t testing.TB) func() {
 		}
 		return output, err
 	}
+
+	cmd := exec.Command("git", "init", "--bare")
+	cmd.Dir = remoteDir
+	err = cmd.Run()
+	assert.NoError(t, err)
+
 	git = newGit
 	_, err = git("", "init")
+	assert.NoError(t, err)
+	_, err = git("", "remote", "add", "origin", remoteDir)
 	assert.NoError(t, err)
 	_, err = git("", "config", "--local", "commit.gpgsign", "false")
 	assert.NoError(t, err)
@@ -528,11 +597,16 @@ func prepareGit(t testing.TB) func() {
 	assert.NoError(t, err)
 	_, err = git("", "commit", "-m", "first commit")
 	assert.NoError(t, err)
+	_, err = git("", "push", "--set-upstream", "origin", "master")
+	assert.NoError(t, err)
 
 	return func() {
 		git = realGit
 		t.Logf("Remove dir: %s", dir)
 		err := os.RemoveAll(dir)
+		assert.NoError(t, err)
+		t.Logf("Remove remote dir: %s", remoteDir)
+		err = os.RemoveAll(remoteDir)
 		assert.NoError(t, err)
 	}
 }
@@ -562,6 +636,16 @@ func TestMainTagAuto(t *testing.T) {
 	stdout, _ := execMain(t)
 	assert.Contains(t, stdout, "first commit")
 	assert.Contains(t, stdout, "v0.1.0")
+	output, err := git("", "tag", "--list")
+	assert.NoError(t, err)
+	assert.Contains(t, output, "v0.1.0")
+}
+
+func TestMainTagSilent(t *testing.T) {
+	tearDown := prepareGit(t)
+	defer tearDown()
+	stdout, _ := execMain(t, "--silent")
+	assert.Empty(t, stdout)
 	output, err := git("", "tag", "--list")
 	assert.NoError(t, err)
 	assert.Contains(t, output, "v0.1.0")
@@ -618,4 +702,17 @@ func TestMainTagSpecifiedWrong(t *testing.T) {
 	output, err := git("", "tag", "--list")
 	assert.NoError(t, err)
 	assert.NotContains(t, output, "v3.0")
+}
+
+func TestMainTagAutoPush(t *testing.T) {
+	tearDown := prepareGit(t)
+	defer tearDown()
+	stdout, _ := execMain(t, "--auto-push")
+	assert.Contains(t, stdout, "pushed")
+	output, err := git("", "tag", "--list")
+	assert.NoError(t, err)
+	assert.Contains(t, output, "v0.1.0")
+	output, err = git("", "ls-remote", "--tags", "origin")
+	assert.NoError(t, err)
+	assert.Contains(t, output, "v0.1.0")
 }

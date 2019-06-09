@@ -24,9 +24,11 @@ Usage: bumpversion [<tagname>]
 
     <tagname>       The name of the tag to create, must be Semantic Versions 2.0.0 (http://semver.org)
     -r, --dry-run   Prints an annotation for the new tag
+    -s, --silent    Do not show the created tag
+    -a, --auto-push Push the created tag automatically
     -m, --major     Increment the MAJOR version
     -n, --minor     Increment the MINOR version (default)
-    -p, --pathc     Increment the PATCH version
+    -p, --patch     Increment the PATCH version
         --version   Show a version of the bumpversion tool
         --find-tag  Show the last tag, can be useful for CI tools
 ```
@@ -36,6 +38,7 @@ Usage: bumpversion [<tagname>]
 * ```$ bumpversion``` creates a tag with +1 for minor (v1.0.0 -> v1.1.0)
 * ```$ bumpversion -p``` increment PATCH version (v1.0.0 -> v1.0.1), for bug fixes
 * ```$ bumpversion v2.10.4``` creates the v2.10.4 tag
+* ```$ bumpversion v2.10.4 --auto-push``` creates the v2.10.4 tag and pushes it to a remote
 
 ```bash
 $ go run bumpversion.go
@@ -64,11 +67,13 @@ Date:   Fri Jun 7 12:10:35 2019 -0500
 
 The script also generates an annotation with all commits merged since the last tag.
 
-And don't forget to execute:
+And don't forget to push the new tag:
 
 ```bash
 $ git push origin --tags
 ```
+
+Or use `--auto-push` flag
 
 ## License
 
