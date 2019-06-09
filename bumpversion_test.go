@@ -229,7 +229,7 @@ func TestSetUpGPG(t *testing.T) {
 	ctrl.EXPECT().
 		Git("", "config", "--local", "log.showSignature", "false").
 		Return("", errors.New("test-error"))
-	tearDownGPG, err := setUpGPG()
+	_, err := setUpGPG()
 	assert.Error(t, err)
 
 	// Check right behavior
@@ -239,7 +239,7 @@ func TestSetUpGPG(t *testing.T) {
 	ctrl.EXPECT().
 		Git("", "config", "--local", "log.showSignature", "false").
 		Return("", nil)
-	tearDownGPG, err = setUpGPG()
+	tearDownGPG, err := setUpGPG()
 	assert.NoError(t, err)
 
 	ctrl.EXPECT().
