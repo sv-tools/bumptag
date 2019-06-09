@@ -177,6 +177,7 @@ func usage() {
 
     <tagname>       The name of the tag to create, must be Semantic Versions 2.0.0 (http://semver.org)
     -r, --dry-run   Prints an annotation for the new tag
+    -s, --silent    Do not show the created tag
     -m, --major     Increment the MAJOR version
     -n, --minor     Increment the MINOR version (default)
     -p, --patch     Increment the PATCH version
@@ -195,11 +196,12 @@ func createFlag(name, short string, value bool, usage string) *bool {
 
 func main() {
 	flag.Usage = usage
-	dryRun := createFlag("dry-run", "r", false, "")
-	major := createFlag("major", "m", false, "")
-	minor := createFlag("minor", "n", false, "")
-	patch := createFlag("patch", "p", false, "")
-	showVersion := createFlag("version", "", false, "")
+	dryRun := createFlag("dry-run", "r", false, "Prints an annotation for the new tag")
+	silent := createFlag("silent", "s", false, "Do not show the created tag")
+	major := createFlag("major", "m", false, "Increment the MAJOR version")
+	minor := createFlag("minor", "n", false, "Increment the MINOR version (default)")
+	patch := createFlag("patch", "p", false, "Increment the PATCH version")
+	showVersion := createFlag("version", "", false, "Show a version of the bumpversion tool")
 	printTag := createFlag("find-tag", "", false, "Show the latest tag, can be useful for CI tools")
 	flag.Parse()
 
@@ -263,9 +265,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	output, err := showTag(tagName)
-	if err != nil {
-		panic(err)
+	if !*silent {
+		output, err := showTag(tagName)
+		if err != nil {
+			panic(err)
+		}
+		_, _ = fmt.Fprintln(os.Stdout, output)
 	}
-	_, _ = fmt.Fprintln(os.Stdout, output)
 }
