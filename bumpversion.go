@@ -312,7 +312,7 @@ func main() {
 		if !*silent {
 			_, _ = fmt.Fprintf(
 				os.Stdout,
-				"The tag '%s' has been pushed to the remote '%s'",
+				"The tag '%s' has been pushed to the remote '%s'\n",
 				tagName,
 				remote,
 			)
