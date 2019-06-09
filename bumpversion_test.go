@@ -456,6 +456,7 @@ func TestGetRemote(t *testing.T) {
 		Git("", "branch", "--list", "-vv").
 		Return("", nil)
 	output, err = getRemote()
+	assert.NoError(t, err)
 	assert.Equal(t, defaultRemote, output)
 
 	ctrl.EXPECT().
