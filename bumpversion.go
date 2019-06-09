@@ -18,7 +18,10 @@ import (
 
 var version = "0.0.0"
 
-const tagPrefix = "v"
+const (
+	tagPrefix     = "v"
+	defaultRemote = "origin"
+)
 
 // Git exec `git` command with arguments
 func realGit(input string, arg ...string) (string, error) {
@@ -161,6 +164,35 @@ func getChangeLog(tagName string) ([]string, error) {
 	return strings.Split(output, "\n"), nil
 }
 
+func getRemote() (string, error) {
+	output, err := git("", "branch", "--list", "-vv")
+	if err != nil {
+		return "", err
+	}
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "*") {
+			for _, part := range strings.Split(line, " ") {
+				if strings.HasPrefix(part, "[") {
+					part = strings.Trim(part, "[]")
+					names := strings.SplitN(part, "/", 2)
+					if len(names) != 2 {
+						return "", fmt.Errorf("cannot determine a remote name: %s", part)
+					}
+					return names[0], nil
+				}
+			}
+			return "", errors.New("remote for current branch not found")
+		}
+	}
+	return defaultRemote, nil
+}
+
+func pushTag(remote, tagName string) error {
+	_, err := git("", "push", remote, tagName)
+	return err
+}
+
 func makeAnnotation(changeLog []string, tagName string) string {
 	output := []string{
 		"Bump version " + tagName,
@@ -178,6 +210,7 @@ func usage() {
     <tagname>       The name of the tag to create, must be Semantic Versions 2.0.0 (http://semver.org)
     -r, --dry-run   Prints an annotation for the new tag
     -s, --silent    Do not show the created tag
+    -a, --auto-push Push the created tag automatically
     -m, --major     Increment the MAJOR version
     -n, --minor     Increment the MINOR version (default)
     -p, --patch     Increment the PATCH version
@@ -198,6 +231,7 @@ func main() {
 	flag.Usage = usage
 	dryRun := createFlag("dry-run", "r", false, "Prints an annotation for the new tag")
 	silent := createFlag("silent", "s", false, "Do not show the created tag")
+	autoPush := createFlag("auto-push", "a", false, "Push the created tag automatically")
 	major := createFlag("major", "m", false, "Increment the MAJOR version")
 	minor := createFlag("minor", "n", false, "Increment the MINOR version (default)")
 	patch := createFlag("patch", "p", false, "Increment the PATCH version")
@@ -264,6 +298,25 @@ func main() {
 	err = createTag(tagName, annotation, sign)
 	if err != nil {
 		panic(err)
+	}
+
+	if *autoPush {
+		remote, err := getRemote()
+		if err != nil {
+			panic(err)
+		}
+		err = pushTag(remote, tagName)
+		if err != nil {
+			panic(err)
+		}
+		if !*silent {
+			_, _ = fmt.Fprintf(
+				os.Stdout,
+				"The tag '%s' has been pushed to the remote '%s'",
+				tagName,
+				remote,
+			)
+		}
 	}
 	if !*silent {
 		output, err := showTag(tagName)
