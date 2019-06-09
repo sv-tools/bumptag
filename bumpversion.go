@@ -225,6 +225,9 @@ func main() {
 	}
 
 	changeLog, err := getChangeLog(tagName)
+	if err != nil {
+		panic(err)
+	}
 
 	if flag.NArg() > 0 {
 		err := tag.Set(strings.TrimPrefix(flag.Arg(0), tagPrefix))
