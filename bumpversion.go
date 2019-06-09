@@ -179,7 +179,7 @@ func usage() {
     -r, --dry-run   Prints an annotation for the new tag
     -m, --major     Increment the MAJOR version
     -n, --minor     Increment the MINOR version (default)
-    -p, --pathc     Increment the PATCH version
+    -p, --patch     Increment the PATCH version
         --version   Show a version of the bumpversion tool
         --find-tag  Show the last tag, can be useful for CI tools`
 	_, _ = fmt.Fprintln(os.Stderr, output)
