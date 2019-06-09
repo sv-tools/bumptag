@@ -567,6 +567,16 @@ func TestMainTagAuto(t *testing.T) {
 	assert.Contains(t, output, "v0.1.0")
 }
 
+func TestMainTagSilent(t *testing.T) {
+	tearDown := prepareGit(t)
+	defer tearDown()
+	stdout, _ := execMain(t, "--silent")
+	assert.Empty(t, stdout)
+	output, err := git("", "tag", "--list")
+	assert.NoError(t, err)
+	assert.Contains(t, output, "v0.1.0")
+}
+
 func TestMainTagSpecified(t *testing.T) {
 	tearDown := prepareGit(t)
 	defer tearDown()
