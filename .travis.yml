@@ -25,6 +25,7 @@ jobs:
       script: make stylecheck
     - stage: test
       name: "Unit tests"
+      IF: tag IS NOT present
       script: make test
       after_success:
         - bash <(curl -s https://codecov.io/bash)
