@@ -516,17 +516,7 @@ func execMain(t testing.TB, arg ...string) (stdout, stderr string) {
 	return readStdout(), readStderr()
 }
 
-func TestMainVersion(t *testing.T) {
-	realVersion := version
-	version = "test-version"
-	defer func() {
-		version = realVersion
-	}()
-	stdout, _ := execMain(t, "--version")
-	assert.Contains(t, stdout, "test-version")
-}
-
-func prepareGit(t testing.TB) func() {
+func prepareGit(t testing.TB) (func(), func()) {
 	dir, err := ioutil.TempDir("", "bumpversion")
 	assert.NoError(t, err)
 	t.Logf("Dir: %s", dir)
@@ -584,24 +574,32 @@ func prepareGit(t testing.TB) func() {
 	_, err = git("", "config", "--local", "commit.gpgsign", "false")
 	assert.NoError(t, err)
 
-	f, err := ioutil.TempFile(dir, "first*.txt")
-	assert.NoError(t, err)
-	defer func() {
-		err := f.Close()
+	var commitNumber int
+	prepareCommit := func() {
+		msg := fmt.Sprintf("commit-#%d", commitNumber)
+		commitNumber++
+		f, err := ioutil.TempFile(dir, msg+"-*.txt")
 		assert.NoError(t, err)
-	}()
-	_, err = f.WriteString("First file")
-	assert.NoError(t, err)
-	err = f.Sync()
-	assert.NoError(t, err)
-	_, err = git("", "add", filepath.Base(f.Name()))
-	assert.NoError(t, err)
-	_, err = git("", "commit", "-m", "first commit")
-	assert.NoError(t, err)
+		defer func() {
+			err := f.Close()
+			assert.NoError(t, err)
+		}()
+		_, err = f.WriteString(msg)
+		assert.NoError(t, err)
+		err = f.Sync()
+		assert.NoError(t, err)
+		_, err = git("", "add", filepath.Base(f.Name()))
+		assert.NoError(t, err)
+		_, err = git("", "commit", "-m", msg)
+		assert.NoError(t, err)
+
+	}
+
+	prepareCommit()
 	_, err = git("", "push", "--set-upstream", "origin", "master")
 	assert.NoError(t, err)
 
-	return func() {
+	return prepareCommit, func() {
 		git = realGit
 		t.Logf("Remove dir: %s", dir)
 		err := os.RemoveAll(dir)
@@ -612,8 +610,18 @@ func prepareGit(t testing.TB) func() {
 	}
 }
 
+func TestMainVersion(t *testing.T) {
+	realVersion := version
+	version = "test-version"
+	defer func() {
+		version = realVersion
+	}()
+	stdout, _ := execMain(t, "--version")
+	assert.Contains(t, stdout, "test-version")
+}
+
 func TestMainFindTag(t *testing.T) {
-	tearDown := prepareGit(t)
+	_, tearDown := prepareGit(t)
 	defer tearDown()
 	stdout, _ := execMain(t, "--find-tag")
 	assert.Empty(t, stdout)
@@ -624,18 +632,18 @@ func TestMainFindTag(t *testing.T) {
 }
 
 func TestMainDryRun(t *testing.T) {
-	tearDown := prepareGit(t)
+	_, tearDown := prepareGit(t)
 	defer tearDown()
 	stdout, _ := execMain(t, "--dry-run")
-	assert.Contains(t, stdout, "first commit")
+	assert.Contains(t, stdout, "commit-#0")
 	assert.Contains(t, stdout, "v0.1.0")
 }
 
 func TestMainTagAuto(t *testing.T) {
-	tearDown := prepareGit(t)
+	_, tearDown := prepareGit(t)
 	defer tearDown()
 	stdout, _ := execMain(t)
-	assert.Contains(t, stdout, "first commit")
+	assert.Contains(t, stdout, "commit-#0")
 	assert.Contains(t, stdout, "v0.1.0")
 	output, err := git("", "tag", "--list")
 	assert.NoError(t, err)
@@ -643,7 +651,7 @@ func TestMainTagAuto(t *testing.T) {
 }
 
 func TestMainTagSilent(t *testing.T) {
-	tearDown := prepareGit(t)
+	_, tearDown := prepareGit(t)
 	defer tearDown()
 	stdout, _ := execMain(t, "--silent")
 	assert.Empty(t, stdout)
@@ -653,7 +661,7 @@ func TestMainTagSilent(t *testing.T) {
 }
 
 func TestMainTagSpecified(t *testing.T) {
-	tearDown := prepareGit(t)
+	_, tearDown := prepareGit(t)
 	defer tearDown()
 	_, _ = execMain(t, "v3.0.3")
 	output, err := git("", "tag", "--list")
@@ -662,10 +670,11 @@ func TestMainTagSpecified(t *testing.T) {
 }
 
 func TestMainTagMajor(t *testing.T) {
-	tearDown := prepareGit(t)
+	prepareCommit, tearDown := prepareGit(t)
 	defer tearDown()
 	_, err := git("", "tag", "v1.1.1")
 	assert.NoError(t, err)
+	prepareCommit()
 	_, _ = execMain(t, "--major")
 	output, err := git("", "tag", "--list")
 	assert.NoError(t, err)
@@ -673,10 +682,11 @@ func TestMainTagMajor(t *testing.T) {
 }
 
 func TestMainTagMinor(t *testing.T) {
-	tearDown := prepareGit(t)
+	prepareCommit, tearDown := prepareGit(t)
 	defer tearDown()
 	_, err := git("", "tag", "v1.1.1")
 	assert.NoError(t, err)
+	prepareCommit()
 	_, _ = execMain(t, "--minor")
 	output, err := git("", "tag", "--list")
 	assert.NoError(t, err)
@@ -684,10 +694,11 @@ func TestMainTagMinor(t *testing.T) {
 }
 
 func TestMainTagPatch(t *testing.T) {
-	tearDown := prepareGit(t)
+	prepareCommit, tearDown := prepareGit(t)
 	defer tearDown()
 	_, err := git("", "tag", "v1.1.1")
 	assert.NoError(t, err)
+	prepareCommit()
 	_, _ = execMain(t, "--patch")
 	output, err := git("", "tag", "--list")
 	assert.NoError(t, err)
@@ -695,7 +706,7 @@ func TestMainTagPatch(t *testing.T) {
 }
 
 func TestMainTagSpecifiedWrong(t *testing.T) {
-	tearDown := prepareGit(t)
+	_, tearDown := prepareGit(t)
 	defer tearDown()
 	assert.Panics(t, func() {
 		_, _ = execMain(t, "v3.0")
@@ -706,7 +717,7 @@ func TestMainTagSpecifiedWrong(t *testing.T) {
 }
 
 func TestMainTagAutoPush(t *testing.T) {
-	tearDown := prepareGit(t)
+	_, tearDown := prepareGit(t)
 	defer tearDown()
 	stdout, _ := execMain(t, "--auto-push")
 	assert.Contains(t, stdout, "pushed")
@@ -716,4 +727,30 @@ func TestMainTagAutoPush(t *testing.T) {
 	output, err = git("", "ls-remote", "--tags", "origin")
 	assert.NoError(t, err)
 	assert.Contains(t, output, "v0.1.0")
+}
+
+func TestMainTagBranch(t *testing.T) {
+	prepareCommit, tearDown := prepareGit(t)
+	defer tearDown()
+
+	_, err := git("", "tag", "v1.0.0")
+	assert.NoError(t, err)
+	_, err = git("", "checkout", "-b", "v1")
+	assert.NoError(t, err)
+	_, err = git("", "checkout", "master")
+	assert.NoError(t, err)
+	prepareCommit()
+	_, err = git("", "tag", "v2.0.0")
+	assert.NoError(t, err)
+	_, err = git("", "checkout", "v1")
+	assert.NoError(t, err)
+	prepareCommit()
+
+	_, _ = execMain(t)
+	output, err := git("", "tag", "--list")
+	assert.NoError(t, err)
+	assert.Contains(t, output, "v1.1.0")
+	output, err = git("", "log", "--pretty=%h %d")
+	assert.NoError(t, err)
+	assert.NotContains(t, output, "v2.0.0")
 }
