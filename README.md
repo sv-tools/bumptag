@@ -14,7 +14,8 @@ To install latest master:
 go get github.com/SVilgelm/bumpversion
 ```
 
-Or download an executable file: https://github.com/SVilgelm/bumpversion/releases/latest
+Or download an executable file for your OS from the [latest release](https://github.com/SVilgelm/bumpversion/releases/latest).
+All builds are signed by gpg key [bumpversion@vilgelm.info (17F40802)](http://hkps.pool.sks-keyservers.net/pks/lookup?search=bumpversion%40vilgelm.info&fingerprint=on&op=index) 
 
 ## Usage
 
