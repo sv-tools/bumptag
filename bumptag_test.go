@@ -130,7 +130,7 @@ func mockStdout(t testing.TB) (read func() string, tearDown func()) {
 
 func mockArgs(t testing.TB, arg ...string) func() {
 	realArgs := os.Args
-	os.Args = append([]string{"bumpversion"}, arg...)
+	os.Args = append([]string{"bumptag"}, arg...)
 	t.Logf("Args: %s", strings.Join(os.Args, " "))
 	return func() {
 		os.Args = realArgs
@@ -408,7 +408,7 @@ func TestUsage(t *testing.T) {
 	read, tearDown := mockStderr(t)
 	defer tearDown()
 	usage()
-	assert.Contains(t, read(), "bumpversion")
+	assert.Contains(t, read(), "bumptag")
 }
 
 func TestCreateFlag(t *testing.T) {
@@ -517,10 +517,10 @@ func execMain(t testing.TB, arg ...string) (stdout, stderr string) {
 }
 
 func prepareGit(t testing.TB) (func(), func()) {
-	dir, err := ioutil.TempDir("", "bumpversion")
+	dir, err := ioutil.TempDir("", "bumptag")
 	assert.NoError(t, err)
 	t.Logf("Dir: %s", dir)
-	remoteDir, err := ioutil.TempDir("", "bumpversion")
+	remoteDir, err := ioutil.TempDir("", "bumptag")
 	assert.NoError(t, err)
 	t.Logf("Remote dir: %s", dir)
 	newGit := func(input string, arg ...string) (string, error) {
