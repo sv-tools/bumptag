@@ -1,6 +1,6 @@
 export GO111MODULE=on
 BUILD_DIR=.build
-GPG_KEY=43C54856
+GPG_KEY=F2DA1B9CE7F25D1B
 
 clean:
 	rm -rf .build
@@ -12,25 +12,52 @@ stylecheck: clean
 	go get golang.org/x/lint/golint
 	golint -set_exit_status ./...
 
+define build_bumptag
+	GOOS=$(1) GOARCH=$(2) go build -ldflags "-X main.version=${TRAVIS_TAG} -s -w" -o "$(BUILD_DIR)/bumptag-${TRAVIS_TAG}-$(1)-$(2)$(3)"
+endef
+
+define gzip_bumptag
+	$(eval $@_NAME := bumptag-${TRAVIS_TAG}-$(1)-$(2)$(3))
+	mv $(BUILD_DIR)/$($@_NAME) $(BUILD_DIR)/bumptag$(3)
+	tar -C $(BUILD_DIR) -czvf $(BUILD_DIR)/$($@_NAME).tgz bumptag$(3)
+	rm $(BUILD_DIR)/bumptag$(3)
+endef
+
+define sign_bumptag
+	$(eval $@_NAME := $(BUILD_DIR)/bumptag-${TRAVIS_TAG}-$(1)-$(2)$(3).tgz)
+	gpg --default-key $(GPG_KEY) --batch --passphrase "${BUMPTAG_PASSPHRASE}" --output "$($@_NAME).sig" --detach-sig "$($@_NAME)"
+endef
+
+define sha256_bumptag
+	$(eval $@_NAME := bumptag-${TRAVIS_TAG}-$(1)-$(2)$(3).tgz)
+	cd $(BUILD_DIR) ; \
+	sha256sum "$($@_NAME)" > "$($@_NAME).sha256.txt"
+endef
+
 build-init:
 	mkdir -p .build/
 
-build-linux: build-init
-	GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=${TRAVIS_TAG} -s -w" -o "$(BUILD_DIR)/bumptag-${TRAVIS_TAG}-linux-amd64"
-
-build-mac: build-init
-	GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=${TRAVIS_TAG} -s -w" -o "$(BUILD_DIR)/bumptag-${TRAVIS_TAG}-darwin-amd64"
-
-build-win: build-init
-	GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=${TRAVIS_TAG} -s -w" -o "$(BUILD_DIR)/bumptag-${TRAVIS_TAG}-windows-amd64.exe"
-
 gzip-all:
-	find $(BUILD_DIR) -type f -exec gzip {} \;
+	$(call gzip_bumptag,linux,amd64)
+	$(call gzip_bumptag,darwin,amd64)
+	$(call gzip_bumptag,windows,amd64,".exe")
 
 sign-all:
-	find $(BUILD_DIR) -type f -exec gpg -v --default-key $(GPG_KEY) --batch --passphrase "${BUMPTAG_PASSPHRASE}" --output "{}.sig" --detach-sig "{}" \;
+	$(call sign_bumptag,linux,amd64)
+	$(call sign_bumptag,darwin,amd64)
+	$(call sign_bumptag,windows,amd64,".exe")
 
-build-all: clean build-linux build-mac build-win gzip-all sign-all
+sha256-all:
+	$(call sha256_bumptag,linux,amd64)
+	$(call sha256_bumptag,darwin,amd64)
+	$(call sha256_bumptag,windows,amd64,".exe")
+
+build-all: clean build-init
+	$(call build_bumptag,linux,amd64)
+	$(call build_bumptag,darwin,amd64)
+	$(call build_bumptag,windows,amd64,".exe")
+
+prepare-release: build-all gzip-all sign-all sha256-all
 
 test: clean
 	go test -coverprofile=coverage.txt -covermode=atomic
