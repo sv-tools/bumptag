@@ -32,14 +32,15 @@ jobs:
         - bash <(curl -s https://codecov.io/bash)
     - stage: deploy
       name: "Update goreportcard"
-      script: curl --fail --request POST "https://goreportcard.com/checks" --data "repo=github.com/SVilgelm/bumpversion"
+      script: curl --fail --request POST "https://goreportcard.com/checks" --data "repo=github.com/SVilgelm/bumptag"
       if: branch = master
     - stage: deploy
       name: "Upload binaries"
       if: tag IS present
       before_install:
-        - openssl aes-256-cbc -K $encrypted_9c019c2a7526_key -iv $encrypted_9c019c2a7526_iv -in .extra/build/bumpversion.gpg.enc -out bumpversion.gpg -d
-        - gpg --import bumpversion.gpg
+        - openssl aes-256-cbc -K $encrypted_9c019c2a7526_key -iv $encrypted_9c019c2a7526_iv -in .extra/build/bumptag.gpg.enc -out bumptag.gpg -d
+        - openssl aes-256-cbc -K $encrypted_63a44db3708e_key -iv $encrypted_63a44db3708e_iv -in .extra/build/bumptag.gpg.enc -out bumptag.gpg -d
+        - gpg --import bumptag.gpg
       script:
         - make build-all
       deploy:
