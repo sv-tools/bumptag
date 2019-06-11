@@ -1,4 +1,4 @@
-module github.com/SVilgelm/bumpversion
+module github.com/SVilgelm/bumptag
 
 go 1.12
 

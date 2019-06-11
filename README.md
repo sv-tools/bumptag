@@ -1,27 +1,27 @@
-# bumpversion
-[![GitHub release](https://img.shields.io/github/release/SVilgelm/bumpversion.svg)](https://GitHub.com/SVilgelm/bumpversion/releases/)
-[![Build Status](https://travis-ci.com/SVilgelm/bumpversion.svg?branch=master)](https://travis-ci.com/SVilgelm/bumpversion)
-[![Go Report Card](https://goreportcard.com/badge/github.com/SVilgelm/bumpversion)](https://goreportcard.com/report/github.com/SVilgelm/bumpversion)
-[![GitHub license](https://img.shields.io/github/license/SVilgelm/bumpversion.svg)](https://github.com/SVilgelm/bumpversion/blob/master/LICENSE)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FSVilgelm%2Fbumpversion.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FSVilgelm%2Fbumpversion?ref=badge_shield)
+# bumptag
+[![GitHub release](https://img.shields.io/github/release/SVilgelm/bumptag.svg)](https://GitHub.com/SVilgelm/bumptag/releases/)
+[![Build Status](https://travis-ci.com/SVilgelm/bumptag.svg?branch=master)](https://travis-ci.com/SVilgelm/bumptag)
+[![Go Report Card](https://goreportcard.com/badge/github.com/SVilgelm/bumptag)](https://goreportcard.com/report/github.com/SVilgelm/bumptag)
+[![GitHub license](https://img.shields.io/github/license/SVilgelm/bumptag.svg)](https://github.com/SVilgelm/bumptag/blob/master/LICENSE)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FSVilgelm%2Fbumptag.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FSVilgelm%2Fbumptag?ref=badge_shield)
 
-bumpversion is a tool to increment a version and to create a git tag with an annotation
+bumptag is a tool to increment a version and to create a git tag with an annotation
 
 ## Installation
 
 To install latest master:
 ```go
-go get github.com/SVilgelm/bumpversion
+go get github.com/SVilgelm/bumptag
 ```
 
-Or download an executable file for your OS from the [latest release](https://github.com/SVilgelm/bumpversion/releases/latest).
-All builds are signed by gpg key [bumpversion@vilgelm.info (17F40802)](http://hkps.pool.sks-keyservers.net/pks/lookup?search=bumpversion%40vilgelm.info&fingerprint=on&op=index) 
+Or download an executable file for your OS from the [latest release](https://github.com/SVilgelm/bumptag/releases/latest).
+All builds are signed by gpg key [bumptag@vilgelm.info (17F40802)](http://hkps.pool.sks-keyservers.net/pks/lookup?search=bumptag%40vilgelm.info&fingerprint=on&op=index) 
 
 ## Usage
 
 ```
-$ bumpversion --help
-Usage: bumpversion [<tagname>]
+$ bumptag --help
+Usage: bumptag [<tagname>]
 
     <tagname>       The name of the tag to create, must be Semantic Versions 2.0.0 (http://semver.org)
     -r, --dry-run   Prints an annotation for the new tag
@@ -30,7 +30,7 @@ Usage: bumpversion [<tagname>]
     -m, --major     Increment the MAJOR version
     -n, --minor     Increment the MINOR version (default)
     -p, --patch     Increment the PATCH version
-        --version   Show a version of the bumpversion tool
+        --version   Show a version of the bumptag tool
         --find-tag  Show the last tag, can be useful for CI tools
 ```
 
@@ -46,15 +46,15 @@ Or set `--auto-push` flag
 
 ### Examples:
 
-* ```$ bumpversion``` creates a tag with +1 for minor (v1.0.0 -> v1.1.0)
-* ```$ bumpversion -p``` increment PATCH version (v1.0.0 -> v1.0.1), for bug fixes
-* ```$ bumpversion v2.10.4``` creates the v2.10.4 tag
-* ```$ bumpversion v2.10.4 --auto-push``` creates the v2.10.4 tag and pushes it to a remote
+* ```$ bumptag``` creates a tag with +1 for minor (v1.0.0 -> v1.1.0)
+* ```$ bumptag -p``` increment PATCH version (v1.0.0 -> v1.0.1), for bug fixes
+* ```$ bumptag v2.10.4``` creates the v2.10.4 tag
+* ```$ bumptag v2.10.4 --auto-push``` creates the v2.10.4 tag and pushes it to a remote
 
 #### Simple scenario:
-Preparing a first release of `bumpversion` tool 
+Preparing a first release of `bumptag` tool 
 ```bash
-$ go run bumpversion.go
+$ go run bumptag.go
 tag v0.1.0
 Tagger: Sergey Vilgelm <sergey@vilgelm.info>
 Date:   Fri Jun 7 12:28:02 2019 -0500
@@ -94,7 +94,7 @@ Initialized empty Git repository in /tmp/test/.git/
 [master (root-commit) f4cefb4] foo
  1 file changed, 0 insertions(+), 0 deletions(-)
  create mode 100644 foo
-07:38:22$ bumpversion
+07:38:22$ bumptag
 tag v0.1.0
 Tagger: Sergey Vilgelm <sergey@vilgelm.info>
 Date:   Mon Jun 10 07:40:54 2019 -0500
@@ -134,7 +134,7 @@ Switched to branch 'master'
  1 file changed, 0 insertions(+), 0 deletions(-)
  create mode 100644 bar
 
-07:42:46$ bumpversion -m
+07:42:46$ bumptag -m
 tag v1.0.0
 Tagger: Sergey Vilgelm <sergey@vilgelm.info>
 Date:   Mon Jun 10 07:42:50 2019 -0500
@@ -174,7 +174,7 @@ Switched to branch 'v0'
 [v0 3999337] xyz
  1 file changed, 0 insertions(+), 0 deletions(-)
  create mode 100644 xyz
-07:43:22$ bumpversion -p
+07:43:22$ bumptag -p
 tag v0.1.1
 Tagger: Sergey Vilgelm <sergey@vilgelm.info>
 Date:   Mon Jun 10 07:43:30 2019 -0500
