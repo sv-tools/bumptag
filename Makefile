@@ -1,6 +1,6 @@
 export GO111MODULE=on
 BUILD_DIR=.build
-GPG_KEY=A4BF6A79FB17F115
+GPG_KEY=43C54856
 
 clean:
 	rm -rf .build
