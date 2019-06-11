@@ -1,6 +1,7 @@
-// bumpversion finds the last git tag, increments it and create new tag with an annotation
+// The bumptag creates a new tag to release a new version of your code.
 //
-// https://github.com/SVilgelm/bumpversion/blob/master/README.md
+// The tool finds the last git tag, increments it and create new tag with a changelog.
+// https://github.com/SVilgelm/bumptag/blob/master/README.md
 package main
 
 import (
@@ -205,7 +206,7 @@ func makeAnnotation(changeLog []string, tagName string) string {
 }
 
 func usage() {
-	output := `Usage: bumpversion [<tagname>]
+	output := `Usage: bumptag [<tagname>]
 
     <tagname>       The name of the tag to create, must be Semantic Versions 2.0.0 (http://semver.org)
     -r, --dry-run   Prints an annotation for the new tag
@@ -214,7 +215,7 @@ func usage() {
     -m, --major     Increment the MAJOR version
     -n, --minor     Increment the MINOR version (default)
     -p, --patch     Increment the PATCH version
-        --version   Show a version of the bumpversion tool
+        --version   Show a version of the bumptag tool
         --find-tag  Show the last tag, can be useful for CI tools`
 	_, _ = fmt.Fprintln(os.Stderr, output)
 }
@@ -235,7 +236,7 @@ func main() {
 	major := createFlag("major", "m", false, "Increment the MAJOR version")
 	minor := createFlag("minor", "n", false, "Increment the MINOR version (default)")
 	patch := createFlag("patch", "p", false, "Increment the PATCH version")
-	showVersion := createFlag("version", "", false, "Show a version of the bumpversion tool")
+	showVersion := createFlag("version", "", false, "Show a version of the bumptag tool")
 	printTag := createFlag("find-tag", "", false, "Show the latest tag, can be useful for CI tools")
 	flag.Parse()
 
