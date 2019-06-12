@@ -9,13 +9,25 @@ bumptag is a tool to increment a version and to create a git tag with an annotat
 
 ## Installation
 
+### Using `brew`
+```bash
+brew install SVilgelm/apps/bumptag
+```
+
+### Go way
 To install latest master:
-```go
+```bash
 go get github.com/SVilgelm/bumptag
 ```
 
-Or download an executable file for your OS from the [latest release](https://github.com/SVilgelm/bumptag/releases/latest).
-All builds are signed by gpg key [bumptag@vilgelm.info (17F40802)](http://hkps.pool.sks-keyservers.net/pks/lookup?search=bumptag%40vilgelm.info&fingerprint=on&op=index) 
+### Binary mode
+
+1. Check the [release](https://github.com/SVilgelm/bumptag/releases) 
+or the [latest release](https://github.com/SVilgelm/bumptag/releases/latest).
+2. Download a build for your OS.
+
+All builds are signed by gpg key [bumptag@vilgelm.info (17F40802)](http://hkps.pool.sks-keyservers.net/pks/lookup?search=bumptag%40vilgelm.info&fingerprint=on&op=index)
+ 
 
 ## Usage
 
