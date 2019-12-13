@@ -5,8 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"io/ioutil"
 	"os"
@@ -17,6 +15,9 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
 // MockGit is a mock of MockGit function
@@ -405,9 +406,10 @@ func TestMakeAnnotation(t *testing.T) {
 }
 
 func TestUsage(t *testing.T) {
-	read, tearDown := mockStderr(t)
+	read, tearDown := mockStdout(t)
 	defer tearDown()
-	usage()
+	args := newBumptagArgs()
+	args.usage()
 	assert.Contains(t, read(), "bumptag")
 }
 
@@ -753,4 +755,13 @@ func TestMainTagBranch(t *testing.T) {
 	output, err = git("", "log", "--pretty=%h %d")
 	assert.NoError(t, err)
 	assert.NotContains(t, output, "v2.0.0")
+}
+
+func TestPanicIfError(t *testing.T) {
+	panicIfError(nil)
+
+	defer func() {
+		assert.NotNil(t, recover())
+	}()
+	panicIfError(errors.New("fake error"))
 }

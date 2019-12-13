@@ -9,12 +9,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/coreos/go-semver/semver"
 	"os"
 	"os/exec"
 	"os/signal"
 	"strconv"
 	"strings"
+
+	"github.com/coreos/go-semver/semver"
 )
 
 var version = "0.0.0"
@@ -24,7 +25,6 @@ const (
 	defaultRemote = "origin"
 )
 
-// Git exec `git` command with arguments
 func realGit(input string, arg ...string) (string, error) {
 	cmd := exec.Command("git", arg...)
 	if len(input) > 0 {
@@ -36,10 +36,9 @@ func realGit(input string, arg ...string) (string, error) {
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		text := fmt.Sprintf(
-			"Command '%s' failed: %s",
+			"command '%s' failed: %s",
 			strings.Join(cmd.Args, " "),
 			err.Error(),
 		)
@@ -47,29 +46,31 @@ func realGit(input string, arg ...string) (string, error) {
 		if len(errText) > 0 {
 			text += "\n" + errText
 		}
-		err = errors.New(text)
+		return "", errors.New(text)
 	}
-	return strings.TrimSpace(stdout.String()), err
+	return strings.TrimSpace(stdout.String()), nil
 }
 
 var git = realGit
 
+func noOutputGit(input string, arg ...string) error {
+	_, err := git(input, arg...)
+	return err
+}
+
 func disableGPG() (string, error) {
 	output, _ := git("", "config", "--local", "--get", "log.showSignature")
-	_, err := git("", "config", "--local", "log.showSignature", "false")
-	if err != nil {
+	if err := noOutputGit("", "config", "--local", "log.showSignature", "false"); err != nil {
 		return "", err
 	}
 	return output, nil
 }
 
-func restoreGPG(oldValue string) (err error) {
+func restoreGPG(oldValue string) error {
 	if len(oldValue) > 0 {
-		_, err = git("", "config", "--local", "log.showSignature", oldValue)
-	} else {
-		_, err = git("", "config", "--local", "--unset", "log.showSignature")
+		return noOutputGit("", "config", "--local", "log.showSignature", oldValue)
 	}
-	return
+	return noOutputGit("", "config", "--local", "--unset", "log.showSignature")
 }
 
 func setUpGPG() (func(), error) {
@@ -141,16 +142,11 @@ func createTag(tagName, annotation string, sign bool) error {
 		args = append(args, "--sign")
 	}
 	args = append(args, tagName)
-	_, err := git(annotation, args...)
-	return err
+	return noOutputGit(annotation, args...)
 }
 
 func showTag(tagName string) (string, error) {
-	output, err := git("", "show", tagName)
-	if err != nil {
-		return "", err
-	}
-	return output, nil
+	return git("", "show", tagName)
 }
 
 func getChangeLog(tagName string) ([]string, error) {
@@ -190,8 +186,7 @@ func getRemote() (string, error) {
 }
 
 func pushTag(remote, tagName string) error {
-	_, err := git("", "push", remote, tagName)
-	return err
+	return noOutputGit("", "push", remote, tagName)
 }
 
 func makeAnnotation(changeLog []string, tagName string) string {
@@ -205,7 +200,26 @@ func makeAnnotation(changeLog []string, tagName string) string {
 	return strings.Join(output, "\n")
 }
 
-func usage() {
+func createFlag(name, short string, value bool, usage string) *bool {
+	p := flag.Bool(name, value, usage)
+	if len(short) > 0 {
+		flag.BoolVar(p, short, value, usage)
+	}
+	return p
+}
+
+type bumptagArgs struct {
+	dryRun   *bool
+	silent   *bool
+	autoPush *bool
+	major    *bool
+	minor    *bool
+	patch    *bool
+	version  *bool
+	findTag  *bool
+}
+
+func (f *bumptagArgs) usage() {
 	output := `Usage: bumptag [<tagname>]
 
     <tagname>       The name of the tag to create, must be Semantic Versions 2.0.0 (http://semver.org)
@@ -217,113 +231,100 @@ func usage() {
     -p, --patch     Increment the PATCH version
         --version   Show a version of the bumptag tool
         --find-tag  Show the last tag, can be useful for CI tools`
-	_, _ = fmt.Fprintln(os.Stderr, output)
+	fmt.Println(output)
 }
 
-func createFlag(name, short string, value bool, usage string) *bool {
-	p := flag.Bool(name, value, usage)
-	if len(short) > 0 {
-		flag.BoolVar(p, short, value, usage)
+func newBumptagArgs() *bumptagArgs {
+	return &bumptagArgs{
+		dryRun:   createFlag("dry-run", "r", false, "Prints an annotation for the new tag"),
+		silent:   createFlag("silent", "s", false, "Do not show the created tag"),
+		autoPush: createFlag("auto-push", "a", false, "Push the created tag automatically"),
+		major:    createFlag("major", "m", false, "Increment the MAJOR version"),
+		minor:    createFlag("minor", "n", false, "Increment the MINOR version (default)"),
+		patch:    createFlag("patch", "p", false, "Increment the PATCH version"),
+		version:  createFlag("version", "", false, "Show a version of the bumptag tool"),
+		findTag:  createFlag("find-tag", "", false, "Show the latest tag, can be useful for CI tools"),
 	}
-	return p
+}
+
+func setTag(tag *semver.Version, args *bumptagArgs) {
+	if flag.NArg() > 0 {
+		if err := tag.Set(strings.TrimPrefix(flag.Arg(0), tagPrefix)); err != nil {
+			panic(err)
+		}
+	} else {
+		switch true {
+		case *args.major:
+			tag.BumpMajor()
+		case *args.minor:
+			tag.BumpMinor()
+		case *args.patch:
+			tag.BumpPatch()
+		default:
+			tag.BumpMinor()
+		}
+	}
+}
+
+func panicIfError(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
 
 func main() {
-	flag.Usage = usage
-	dryRun := createFlag("dry-run", "r", false, "Prints an annotation for the new tag")
-	silent := createFlag("silent", "s", false, "Do not show the created tag")
-	autoPush := createFlag("auto-push", "a", false, "Push the created tag automatically")
-	major := createFlag("major", "m", false, "Increment the MAJOR version")
-	minor := createFlag("minor", "n", false, "Increment the MINOR version (default)")
-	patch := createFlag("patch", "p", false, "Increment the PATCH version")
-	showVersion := createFlag("version", "", false, "Show a version of the bumptag tool")
-	printTag := createFlag("find-tag", "", false, "Show the latest tag, can be useful for CI tools")
+	args := newBumptagArgs()
+
+	flag.Usage = args.usage
 	flag.Parse()
 
-	if *showVersion {
-		_, _ = fmt.Fprintf(os.Stdout, "version %s", version)
+	if *args.version {
+		fmt.Print(version)
 		return
 	}
 
 	tearDownGPG, err := setUpGPG()
-	if err != nil {
-		panic(err)
-	}
+	panicIfError(err)
 	defer tearDownGPG()
 
 	tag, tagName, err := findTag()
-	if err != nil {
-		panic(err)
-	}
+	panicIfError(err)
 
-	if *printTag {
-		_, _ = fmt.Fprint(os.Stdout, tagName)
+	if *args.findTag {
+		fmt.Print(tagName)
 		return
 	}
 
 	changeLog, err := getChangeLog(tagName)
-	if err != nil {
-		panic(err)
-	}
+	panicIfError(err)
 
-	if flag.NArg() > 0 {
-		err := tag.Set(strings.TrimPrefix(flag.Arg(0), tagPrefix))
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		if *major {
-			tag.BumpMajor()
-		} else {
-			if *minor {
-				tag.BumpMinor()
-			} else {
-				if *patch {
-					tag.BumpPatch()
-				} else {
-					tag.BumpMinor()
-				}
-			}
-		}
-	}
-
+	setTag(tag, args)
 	tagName = tagPrefix + tag.String()
 	annotation := makeAnnotation(changeLog, tagName)
 
-	if *dryRun {
-		_, _ = fmt.Fprintln(os.Stdout, annotation)
+	if *args.dryRun {
+		fmt.Println(annotation)
 		return
 	}
 
 	sign := gitConfigBool("commit.gpgsign", false)
-	err = createTag(tagName, annotation, sign)
-	if err != nil {
-		panic(err)
-	}
+	panicIfError(createTag(tagName, annotation, sign))
 
-	if *autoPush {
+	if *args.autoPush {
 		remote, err := getRemote()
-		if err != nil {
-			panic(err)
-		}
-		err = pushTag(remote, tagName)
-		if err != nil {
-			panic(err)
-		}
-		if !*silent {
-			_, _ = fmt.Fprintf(
-				os.Stdout,
-				"The tag '%s' has been pushed to the remote '%s'\n",
+		panicIfError(err)
+		panicIfError(pushTag(remote, tagName))
+		if !*args.silent {
+			fmt.Printf(
+				"The tag '%s' has been pushed to the remote '%s'",
 				tagName,
 				remote,
 			)
 		}
 	}
-	if !*silent {
+	if !*args.silent {
 		output, err := showTag(tagName)
-		if err != nil {
-			panic(err)
-		}
-		_, _ = fmt.Fprintln(os.Stdout, output)
+		panicIfError(err)
+		fmt.Println(output)
 	}
 }
