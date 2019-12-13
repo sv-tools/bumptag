@@ -23,12 +23,12 @@ go get github.com/SVilgelm/bumptag
 
 ### Binary mode
 
-1. Check the [release](https://github.com/SVilgelm/bumptag/releases) 
+1. Check the [release](https://github.com/SVilgelm/bumptag/releases)
 or the [latest release](https://github.com/SVilgelm/bumptag/releases/latest).
 2. Download a build for your OS.
 
 All builds are signed by gpg key [bumptag@vilgelm.info (17F40802)](http://hkps.pool.sks-keyservers.net/pks/lookup?search=bumptag%40vilgelm.info&fingerprint=on&op=index)
- 
+
 
 ## Usage
 
@@ -37,6 +37,7 @@ $ bumptag --help
 Usage: bumptag [<tagname>]
 
     <tagname>       The name of the tag to create, must be Semantic Versions 2.0.0 (http://semver.org)
+    -e, --edit      Edit an annotation
     -r, --dry-run   Prints an annotation for the new tag
     -s, --silent    Do not show the created tag
     -a, --auto-push Push the created tag automatically
@@ -62,10 +63,11 @@ Or set `--auto-push` flag
 * ```$ bumptag``` creates a tag with +1 for minor (v1.0.0 -> v1.1.0)
 * ```$ bumptag -p``` increment PATCH version (v1.0.0 -> v1.0.1), for bug fixes
 * ```$ bumptag v2.10.4``` creates the v2.10.4 tag
-* ```$ bumptag v2.10.4 --auto-push``` creates the v2.10.4 tag and pushes it to a remote
+* ```$ bumptag --auto-push v2.10.4``` creates the v2.10.4 tag and pushes it to a remote
+* ```$ bumptag --edit v2.10.4 ``` creates the v2.10.4 tag and runs an editor to manually edit the annotation
 
 #### Simple scenario:
-Preparing a first release of `bumptag` tool 
+Preparing a first release of `bumptag` tool
 ```bash
 $ go run bumptag.go
 tag v0.1.0
