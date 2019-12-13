@@ -1,10 +1,8 @@
 # bumptag
 [![GitHub release](https://img.shields.io/github/release/SVilgelm/bumptag.svg)](https://GitHub.com/SVilgelm/bumptag/releases/)
-[![Build Status](https://travis-ci.com/SVilgelm/bumptag.svg?branch=master)](https://travis-ci.com/SVilgelm/bumptag)
-[![Go Report Card](https://goreportcard.com/badge/github.com/SVilgelm/bumptag)](https://goreportcard.com/report/github.com/SVilgelm/bumptag)
-[![codecov](https://codecov.io/gh/SVilgelm/bumptag/branch/master/graph/badge.svg)](https://codecov.io/gh/SVilgelm/bumptag)
+![](https://github.com/SVilgelm/bumptag/workflows/Tests/badge.svg)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SVilgelm_bumptag&metric=alert_status)](https://sonarcloud.io/dashboard?id=SVilgelm_bumptag)
 [![GitHub license](https://img.shields.io/github/license/SVilgelm/bumptag.svg)](https://github.com/SVilgelm/bumptag/blob/master/LICENSE)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FSVilgelm%2Fbumptag.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FSVilgelm%2Fbumptag?ref=badge_shield)
 
 bumptag is a tool to increment a version and to create a git tag with an annotation
 
