@@ -575,6 +575,10 @@ func prepareGit(t testing.TB) (func(), func()) {
 	assert.NoError(t, err)
 	_, err = git("", "config", "--local", "commit.gpgsign", "false")
 	assert.NoError(t, err)
+	_, err = git("", "config", "--local", "user.email", "test@example.com")
+	assert.NoError(t, err)
+	_, err = git("", "config", "--local", "user.name", "Test Example")
+	assert.NoError(t, err)
 
 	var commitNumber int
 	prepareCommit := func() {
