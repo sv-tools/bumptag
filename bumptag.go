@@ -9,6 +9,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -23,6 +24,7 @@ var version = "0.0.0"
 const (
 	tagPrefix     = "v"
 	defaultRemote = "origin"
+	defaultEditor = "vim"
 )
 
 func realGit(input string, arg ...string) (string, error) {
@@ -209,6 +211,7 @@ func createFlag(name, short string, value bool, usage string) *bool {
 }
 
 type bumptagArgs struct {
+	edit     *bool
 	dryRun   *bool
 	silent   *bool
 	autoPush *bool
@@ -223,6 +226,7 @@ func (f *bumptagArgs) usage() {
 	output := `Usage: bumptag [<tagname>]
 
     <tagname>       The name of the tag to create, must be Semantic Versions 2.0.0 (http://semver.org)
+    -e, --edit      Edit an annotation
     -r, --dry-run   Prints an annotation for the new tag
     -s, --silent    Do not show the created tag
     -a, --auto-push Push the created tag automatically
@@ -236,6 +240,7 @@ func (f *bumptagArgs) usage() {
 
 func newBumptagArgs() *bumptagArgs {
 	return &bumptagArgs{
+		edit:     createFlag("edit", "e", false, "Edit an annotation"),
 		dryRun:   createFlag("dry-run", "r", false, "Prints an annotation for the new tag"),
 		silent:   createFlag("silent", "s", false, "Do not show the created tag"),
 		autoPush: createFlag("auto-push", "a", false, "Push the created tag automatically"),
@@ -272,6 +277,51 @@ func panicIfError(err error) {
 	}
 }
 
+func openEditor(filename string) error {
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		editor = defaultEditor
+	}
+
+	executable, err := exec.LookPath(editor)
+	if err != nil {
+		return err
+	}
+
+	cmd := exec.Command(executable, filename)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	return cmd.Run()
+}
+
+func edit(annotation string) (string, error) {
+	file, err := ioutil.TempFile(os.TempDir(), "*")
+	if err != nil {
+		return "", err
+	}
+	filename := file.Name()
+	defer os.Remove(filename)
+
+	if _, err := file.WriteString(annotation); err != nil {
+		return "", err
+	}
+	if err := file.Close(); err != nil {
+		return "", err
+	}
+
+	if err := openEditor(filename); err != nil {
+		return "", err
+	}
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
+}
+
 func main() {
 	args := newBumptagArgs()
 
@@ -301,6 +351,11 @@ func main() {
 	setTag(tag, args)
 	tagName = tagPrefix + tag.String()
 	annotation := makeAnnotation(changeLog, tagName)
+
+	if *args.edit {
+		annotation, err = edit(annotation)
+		panicIfError(err)
+	}
 
 	if *args.dryRun {
 		fmt.Println(annotation)
