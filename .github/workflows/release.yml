@@ -1,0 +1,235 @@
+name: Release
+on:
+  push:
+    tags:
+      - "v[0-9].[0-9]+.[0-9]+"
+env:
+  GPG_KEY: F2DA1B9CE7F25D1B
+jobs:
+  build:
+    env:
+      BUILD_DIR: .build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.13.x
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set Version
+        run: echo "::set-env name=VERSION::$(echo ${{ github.ref }} | cut -d'/' -f3)"
+      - name: Build binaries
+        id: build
+        run: |
+          mkdir ${BUILD_DIR}
+          TARGET=bumptag-${VERSION}-linux-amd64
+          GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=${VERSION} -s -w" -o "${BUILD_DIR}/${TARGET}"
+          echo "::set-output name=linux::${TARGET}"
+
+          TARGET=bumptag-${VERSION}-darwin-amd64
+          GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=${VERSION} -s -w" -o "${BUILD_DIR}/${TARGET}"
+          echo "::set-output name=darwin::${TARGET}"
+      - name: gzip
+        id: gzip
+        run: |
+          cd ${BUILD_DIR}
+          TARGET=${{ steps.build.outputs.linux }}
+          mv ${TARGET} bumptag
+          tar -czvf ${TARGET}.tgz bumptag
+          rm bumptag
+          echo "::set-output name=linux::${TARGET}.tgz"
+
+          TARGET=${{ steps.build.outputs.darwin }}
+          mv ${TARGET} bumptag
+          tar -czvf ${TARGET}.tgz bumptag
+          rm bumptag
+          echo "::set-output name=darwin::${TARGET}.tgz"
+      - name: sha256
+        id: sha256
+        run: |
+          cd ${BUILD_DIR}
+          TARGET=${{ steps.gzip.outputs.linux }}
+          sha256sum "${TARGET}" > "${TARGET}.sha256.txt"
+          echo "::set-output name=linux::${TARGET}.sha256.txt"
+
+          TARGET=${{ steps.gzip.outputs.darwin }}
+          sha256sum "${TARGET}" > "${TARGET}.sha256.txt"
+          echo "::set-output name=darwin::${TARGET}.sha256.txt"
+      - name: sign
+        id: sign
+        run: |
+          gpgconf --kill gpg-agent
+          gpg --quiet --batch --yes --decrypt --passphrase="${{ secrets.GPG_PASSPHRASE }}" --output .extra/build/bumptag.asc .extra/build/bumptag.asc.gpg
+          gpg --batch --yes --import .extra/build/bumptag.asc
+
+          cd ${BUILD_DIR}
+          export GPG_TTY=$(tty)
+          TARGET=${{ steps.gzip.outputs.linux }}
+          gpg --pinentry-mode loopback --batch --yes --default-key ${GPG_KEY} --passphrase "${{ secrets.BUMPTAG_PASSPHRASE }}" --output "${TARGET}.sig" --detach-sig "${TARGET}"
+          echo "::set-output name=linux::${TARGET}.sig"
+
+          TARGET=${{ steps.gzip.outputs.darwin }}
+          gpg --pinentry-mode loopback --batch --yes --default-key ${GPG_KEY} --passphrase "${{ secrets.BUMPTAG_PASSPHRASE }}" --output "${TARGET}.sig" --detach-sig "${TARGET}"
+          echo "::set-output name=darwin::${TARGET}.sig"
+      - name: outputs
+        id: outputs
+        run: |
+          ls -alh ${BUILD_DIR}
+          echo "::set-output name=linux::${BUILD_DIR}/${{ steps.gzip.outputs.linux }}"
+          echo "::set-output name=linux_sha256::${BUILD_DIR}/${{ steps.sha256.outputs.linux }}"
+          echo "::set-output name=linux_sign::${BUILD_DIR}/${{ steps.sign.outputs.linux }}"
+
+          echo "::set-output name=darwin::${BUILD_DIR}/${{ steps.gzip.outputs.darwin }}"
+          echo "::set-output name=darwin_sha256::${BUILD_DIR}/${{ steps.sha256.outputs.darwin }}"
+          echo "::set-output name=darwin_sign::${BUILD_DIR}/${{ steps.sign.outputs.darwin }}"
+
+          echo "::set-output name=version::${VERSION}"
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.outputs.outputs.version }}
+          release_name: Bump version ${{ steps.outputs.outputs.version }}
+          draft: false
+          prerelease: true
+      - name: Upload linux_tgz
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.outputs.outputs.linux }}
+          asset_name: ${{ steps.gzip.outputs.linux }}
+          asset_content_type: application/gzip
+      - name: Upload linux_sha256
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.outputs.outputs.linux_sha256 }}
+          asset_name: ${{ steps.sha256.outputs.linux }}
+          asset_content_type: text/plain
+      - name: Upload linux_sign
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.outputs.outputs.linux_sign }}
+          asset_name: ${{ steps.sign.outputs.linux }}
+          asset_content_type: application/gpg-signature
+      - name: Upload darwin_tgz
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.outputs.outputs.darwin }}
+          asset_name: ${{ steps.gzip.outputs.darwin }}
+          asset_content_type: application/gzip
+      - name: Upload darwin_sha256
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.outputs.outputs.darwin_sha256 }}
+          asset_name: ${{ steps.sha256.outputs.darwin }}
+          asset_content_type: text/plain
+      - name: Upload darwin_sign
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.outputs.outputs.darwin_sign }}
+          asset_name: ${{ steps.sign.outputs.darwin }}
+          asset_content_type: application/gpg-signature
+  test:
+    needs: build
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Set Linux Platform Variable
+        if: runner.os == 'Linux'
+        run: echo "::set-env name=PLATFORM::linux-amd64"
+      - name: Set macOS Platform Variable
+        if: runner.os == 'macOS'
+        run: echo "::set-env name=PLATFORM::darwin-amd64"
+      - name: Set Version
+        run: echo "::set-env name=VERSION::$(echo ${{ github.ref }} | cut -d'/' -f3)"
+      - name: Download Files
+        run: |
+          curl -L --fail https://github.com/SVilgelm/bumptag/releases/download/${VERSION}/bumptag-${VERSION}-${PLATFORM}.tgz -o bumptag-${VERSION}-${PLATFORM}.tgz
+          curl -L --fail https://github.com/SVilgelm/bumptag/releases/download/${VERSION}/bumptag-${VERSION}-${PLATFORM}.tgz.sha256.txt -o bumptag-${VERSION}-${PLATFORM}.tgz.sha256.txt
+          curl -L --fail https://github.com/SVilgelm/bumptag/releases/download/${VERSION}/bumptag-${VERSION}-${PLATFORM}.tgz.sig -o bumptag-${VERSION}-${PLATFORM}.tgz.sig
+      - name: Check sha256 on Linux
+        if: runner.os == 'Linux'
+        run: sha256sum -c bumptag-${VERSION}-${PLATFORM}.tgz.sha256.txt
+      - name: Check sha256 on macOS
+        if: runner.os == 'macOS'
+        run: shasum -a 256 -c bumptag-${VERSION}-${PLATFORM}.tgz.sha256.txt
+      - name: Install GPG on macOS
+        if: runner.os == 'macOS'
+        run: brew install gpg
+      - name: Check GPG
+        run: |
+          gpg --recv-keys --keyserver hkps://keys.openpgp.org ${GPG_KEY}
+          gpg --verify bumptag-${VERSION}-${PLATFORM}.tgz.sig bumptag-${VERSION}-${PLATFORM}.tgz
+      - name: Test Version
+        run: |
+          tar -xzf bumptag-${VERSION}-${PLATFORM}.tgz
+          test "$(./bumptag --version)" = "${VERSION}"
+  brew:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout homebrew-apps
+        uses: actions/checkout@v2
+        with:
+          repository: SVilgelm/homebrew-apps
+          path: homebrew-apps
+          token: ${{ secrets.GITHUB_PAT }}
+      - name: Set Version
+        run: echo "::set-env name=VERSION::$(echo ${{ github.ref }} | cut -d'/' -f3 | tail -c +2)"
+      - name: Download sha256
+        run: |
+          curl -L --fail https://github.com/SVilgelm/bumptag/releases/download/v${VERSION}/bumptag-v${VERSION}-darwin-amd64.tgz.sha256.txt -o sha256.txt
+          echo "::set-env name=SHA256::$(cat sha256.txt | cut -d' ' -f 1)"
+      - name: Create Commit
+        run: |
+          cd homebrew-apps
+          git config --local user.email "bumptag@vilgelm.info"
+          git config --local user.name "Bumptag"
+          git push --delete origin bumptag-${VERSION} || true
+          git checkout -b bumptag-${VERSION}
+          sed -i 's/version ".*"/version "'${VERSION}'"/g' Formula/bumptag.rb
+          sed -i 's/sha256 ".*"/sha256 "'${SHA256}'"/g' Formula/bumptag.rb
+          git diff
+          git add -u
+          git commit -m"Release bumptag v${VERSION}"
+          git push origin bumptag-${VERSION}
+      - name: Create Pull Request
+        env:
+          GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
+        run: |
+          curl --fail -u SVilgelm:${GITHUB_PAT} https://api.github.com/repos/SVilgelm/homebrew-apps/pulls -d '{"title": "Release bumptag v'${VERSION}'", "head": "bumptag-'${VERSION}'", "base": "master"}'
+  release:
+    needs: brew
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set Version
+        id: version
+        run: echo "::set-output name=version::$(echo ${{ github.ref }} | cut -d'/' -f3)"
+      - name: Update Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE_ID=$(curl --fail -u SVilgelm:${GITHUB_TOKEN} https://api.github.com/repos/SVilgelm/bumptag/releases/tags/v9.0.0 | jq '.id')
+          curl --fail -u SVilgelm:${GITHUB_TOKEN} -X PATCH https://api.github.com/repos/SVilgelm/bumptag/releases/${RELEASE_ID} -d '{"prerelease": false}'
