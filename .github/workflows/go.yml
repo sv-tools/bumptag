@@ -1,0 +1,77 @@
+name: Tests
+on:
+  push:
+    branches:
+      - master
+      - "v[0-9]"
+    tags:
+      - "v[0-9].[0-9]+.[0-9]+"
+  pull_request:
+    branches:
+      - master
+      - "v[0-9]"
+env:
+  LINT_VERSION: "v1.21.0"
+  NANCY_VERSION: "v0.0.39"
+  SONAR_VERSION: "4.2.0.1873"
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.13.x
+      - name: Checkout code
+        uses: actions/checkout@v1
+      - name: Cache Tools
+        id: cache-tools
+        uses: actions/cache@v1
+        with:
+          path: ~/tools
+          key: ${{ runner.os }}-tools-${LINT_VERSION}-${NANCY_VERSION}
+      - name: Install Tools
+        if: steps.cache-tools.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/tools
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ~/tools ${LINT_VERSION}
+          curl -sL https://github.com/sonatype-nexus-community/nancy/releases/download/${NANCY_VERSION}/nancy-linux.amd64-${NANCY_VERSION} -o ~/tools/nancy
+          chmod +x ~/tools/nancy
+      - name: Update PATH
+        run: echo "::add-path::~/tools"
+      - name: lint
+        run: golangci-lint run ./...
+      - name: nancy
+        run: nancy go.sum
+      - name: unittests
+        run: go test -race ./...
+  sonar:
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.13.x
+      - name: Checkout code
+        uses: actions/checkout@v1
+      - name: unittests
+        run: go test -cover -coverprofile=coverage.out -covermode=atomic -json ./... > test-report.out
+      - name: Cache Sonar Scanner Client
+        id: cache-sonar
+        uses: actions/cache@v1
+        with:
+          path: sonar
+          key: ${{ runner.os }}-sonar-${SONAR_VERSION}
+      - name: Install Sonar Scanner Client
+        if: steps.cache-sonar.outputs.cache-hit != 'true'
+        run: |
+          curl -L https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_VERSION}-linux.zip -o sonar.zip
+          unzip sonar.zip
+          mv sonar-scanner* sonar
+          rm sonar.zip
+      - name: Run sonarqube
+        run: sonar/bin/sonar-scanner
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
