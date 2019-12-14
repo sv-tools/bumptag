@@ -21,11 +21,11 @@ go get github.com/SVilgelm/bumptag
 
 ### Binary mode
 
-1. Check the [release](https://github.com/SVilgelm/bumptag/releases)
+1. Check the [releases](https://github.com/SVilgelm/bumptag/releases)
 or the [latest release](https://github.com/SVilgelm/bumptag/releases/latest).
 2. Download a build for your OS.
 
-All builds are signed by gpg key [bumptag@vilgelm.info (17F40802)](http://hkps.pool.sks-keyservers.net/pks/lookup?search=bumptag%40vilgelm.info&fingerprint=on&op=index)
+All builds are signed by gpg key [bumptag@vilgelm.info (43C54856)](https://keys.openpgp.org/search?q=bumptag%40vilgelm.info)
 
 
 ## Usage
