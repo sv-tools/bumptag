@@ -225,11 +225,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set Version
-        id: version
-        run: echo "::set-output name=version::$(echo ${{ github.ref }} | cut -d'/' -f3)"
+        run: echo "::set-env name=VERSION::$(echo ${{ github.ref }} | cut -d'/' -f3)"
       - name: Update Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RELEASE_ID=$(curl --fail -u SVilgelm:${GITHUB_TOKEN} https://api.github.com/repos/SVilgelm/bumptag/releases/tags/v9.0.0 | jq '.id')
+          RELEASE_ID=$(curl --fail -u SVilgelm:${GITHUB_TOKEN} https://api.github.com/repos/SVilgelm/bumptag/releases/tags/${VERSION} | jq '.id')
           curl --fail -u SVilgelm:${GITHUB_TOKEN} -X PATCH https://api.github.com/repos/SVilgelm/bumptag/releases/${RELEASE_ID} -d '{"prerelease": false}'
