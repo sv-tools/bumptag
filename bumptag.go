@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -23,7 +24,6 @@ var version = "0.0.0"
 
 const (
 	tagPrefix     = "v"
-	defaultRemote = "origin"
 	defaultEditor = "vim"
 )
 
@@ -61,8 +61,8 @@ func noOutputGit(input string, arg ...string) error {
 }
 
 func disableGPG() (string, error) {
-	output, _ := git("", "config", "--local", "--get", "log.showSignature")
-	if err := noOutputGit("", "config", "--local", "log.showSignature", "false"); err != nil {
+	output, _ := git("", cConfig, cLocal, cGet, cLogShowSignature)
+	if err := noOutputGit("", cConfig, cLocal, cLogShowSignature, "false"); err != nil {
 		return "", err
 	}
 	return output, nil
@@ -70,9 +70,9 @@ func disableGPG() (string, error) {
 
 func restoreGPG(oldValue string) error {
 	if len(oldValue) > 0 {
-		return noOutputGit("", "config", "--local", "log.showSignature", oldValue)
+		return noOutputGit("", cConfig, cLocal, cLogShowSignature, oldValue)
 	}
-	return noOutputGit("", "config", "--local", "--unset", "log.showSignature")
+	return noOutputGit("", cConfig, cLocal, cUnset, cLogShowSignature)
 }
 
 func setUpGPG() (func(), error) {
@@ -95,7 +95,7 @@ func setUpGPG() (func(), error) {
 }
 
 func gitConfig(name, defaultValue string) string {
-	output, err := git("", "config", "--get", name)
+	output, err := git("", cConfig, cGet, name)
 	if err != nil {
 		return defaultValue
 	}
@@ -114,7 +114,7 @@ func gitConfigBool(name string, defaultValue bool) bool {
 func findTag() (*semver.Version, string, error) {
 	currentTag := &semver.Version{}
 	currentTagName := ""
-	output, err := git("", "log", "--pretty=%D")
+	output, err := git("", cLog, "--pretty=%D")
 	if err != nil {
 		return nil, "", err
 	}
@@ -139,7 +139,7 @@ func findTag() (*semver.Version, string, error) {
 }
 
 func createTag(tagName, annotation string, sign bool) error {
-	args := []string{"tag", "-F-"}
+	args := []string{cTag, "-F-"}
 	if sign {
 		args = append(args, "--sign")
 	}
@@ -148,11 +148,11 @@ func createTag(tagName, annotation string, sign bool) error {
 }
 
 func showTag(tagName string) (string, error) {
-	return git("", "show", tagName)
+	return git("", cShow, tagName)
 }
 
 func getChangeLog(tagName string) ([]string, error) {
-	args := []string{"log", "--pretty=%h %s", "--no-merges"}
+	args := []string{cLog, "--pretty=%h %s", "--no-merges"}
 	if len(tagName) > 0 {
 		args = append(args, tagName+"..HEAD")
 	}
@@ -163,32 +163,24 @@ func getChangeLog(tagName string) ([]string, error) {
 	return strings.Split(output, "\n"), nil
 }
 
+var branchRE = regexp.MustCompile(`^\* .+ \[(.+)/.+\]`)
+
 func getRemote() (string, error) {
-	output, err := git("", "branch", "--list", "-vv")
+	output, err := git("", cBranch, "--list", "-vv")
 	if err != nil {
 		return "", err
 	}
-	for _, line := range strings.Split(output, "\n") {
-		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "*") {
-			for _, part := range strings.Split(line, " ") {
-				if strings.HasPrefix(part, "[") {
-					part = strings.Trim(part, "[]")
-					names := strings.SplitN(part, "/", 2)
-					if len(names) != 2 {
-						return "", fmt.Errorf("cannot determine a remote name: %s", part)
-					}
-					return names[0], nil
-				}
-			}
-			return "", errors.New("remote for current branch not found")
+	for _, branch := range strings.Split(output, "\n") {
+		matches := branchRE.FindStringSubmatch(branch)
+		if len(matches) > 1 {
+			return matches[1], nil
 		}
 	}
-	return defaultRemote, nil
+	return "", errors.New("remote for current branch not found")
 }
 
 func pushTag(remote, tagName string) error {
-	return noOutputGit("", "push", remote, tagName)
+	return noOutputGit("", cPush, remote, tagName)
 }
 
 func makeAnnotation(changeLog []string, tagName string) string {
@@ -362,7 +354,7 @@ func main() {
 		return
 	}
 
-	sign := gitConfigBool("commit.gpgsign", false)
+	sign := gitConfigBool(cCommitGPGSign, false)
 	panicIfError(createTag(tagName, annotation, sign))
 
 	if *args.autoPush {
