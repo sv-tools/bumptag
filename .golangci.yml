@@ -1,5 +1,5 @@
 run:
-  skip-dirs-use-default: false
+  skip-dirs-use-default: true
 
 linters:
   enable:
@@ -12,6 +12,7 @@ linters:
     - golint
     - gocognit
     - gocyclo
+    - gocritic
   fast: true
 
 linters-settings:
@@ -29,6 +30,8 @@ linters-settings:
     min-complexity: 15
   gofmt:
     simplify: true
+
+
 
 issues:
   exclude-rules:
