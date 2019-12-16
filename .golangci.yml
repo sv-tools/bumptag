@@ -1,5 +1,5 @@
 run:
-  skip-dirs-use-default: false
+  skip-dirs-use-default: true
 
 linters:
   enable:
@@ -12,6 +12,7 @@ linters:
     - golint
     - gocognit
     - gocyclo
+    - gocritic
   fast: true
 
 linters-settings:
@@ -35,5 +36,6 @@ issues:
     - path: _test\.go
       linters:
         - gocyclo
+        - gocognit
         - dupl
         - gosec
