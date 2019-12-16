@@ -28,14 +28,17 @@ const (
 )
 
 func realGit(input string, arg ...string) (string, error) {
+	var (
+		stdout bytes.Buffer
+		stderr bytes.Buffer
+	)
+
 	cmd := exec.Command("git", arg...)
 	if len(input) > 0 {
 		cmd.Stdin = strings.NewReader(input)
 	}
-	var stdout bytes.Buffer
-	cmd.Stdout = &stdout
 
-	var stderr bytes.Buffer
+	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
@@ -250,7 +253,7 @@ func setTag(tag *semver.Version, args *bumptagArgs) {
 			panic(err)
 		}
 	} else {
-		switch true {
+		switch {
 		case *args.major:
 			tag.BumpMajor()
 		case *args.minor:
