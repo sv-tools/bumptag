@@ -669,7 +669,7 @@ func TestMainTagSilent(t *testing.T) {
 func TestMainTagSpecified(t *testing.T) {
 	_, tearDown := prepareGit(t)
 	defer tearDown()
-	_, _ = execMain(t, "v3.0.3")
+	execMain(t, "v3.0.3")
 	output, err := git("", "tag", "--list")
 	assert.NoError(t, err)
 	assert.Contains(t, output, "v3.0.3")
@@ -681,7 +681,7 @@ func TestMainTagMajor(t *testing.T) {
 	_, err := git("", "tag", "v1.1.1")
 	assert.NoError(t, err)
 	prepareCommit()
-	_, _ = execMain(t, "--major")
+	execMain(t, "--major")
 	output, err := git("", "tag", "--list")
 	assert.NoError(t, err)
 	assert.Contains(t, output, "v2.0.0")
@@ -693,7 +693,7 @@ func TestMainTagMinor(t *testing.T) {
 	_, err := git("", "tag", "v1.1.1")
 	assert.NoError(t, err)
 	prepareCommit()
-	_, _ = execMain(t, "--minor")
+	execMain(t, "--minor")
 	output, err := git("", "tag", "--list")
 	assert.NoError(t, err)
 	assert.Contains(t, output, "v1.2.0")
@@ -705,7 +705,7 @@ func TestMainTagPatch(t *testing.T) {
 	_, err := git("", "tag", "v1.1.1")
 	assert.NoError(t, err)
 	prepareCommit()
-	_, _ = execMain(t, "--patch")
+	execMain(t, "--patch")
 	output, err := git("", "tag", "--list")
 	assert.NoError(t, err)
 	assert.Contains(t, output, "v1.1.2")
@@ -715,7 +715,7 @@ func TestMainTagSpecifiedWrong(t *testing.T) {
 	_, tearDown := prepareGit(t)
 	defer tearDown()
 	assert.Panics(t, func() {
-		_, _ = execMain(t, "v3.0")
+		execMain(t, "v3.0")
 	})
 	output, err := git("", "tag", "--list")
 	assert.NoError(t, err)
@@ -752,7 +752,7 @@ func TestMainTagBranch(t *testing.T) {
 	assert.NoError(t, err)
 	prepareCommit()
 
-	_, _ = execMain(t)
+	execMain(t)
 	output, err := git("", "tag", "--list")
 	assert.NoError(t, err)
 	assert.Contains(t, output, "v1.1.0")
@@ -768,4 +768,14 @@ func TestPanicIfError(t *testing.T) {
 		assert.NotNil(t, recover())
 	}()
 	panicIfError(errors.New("fake error"))
+}
+
+func TestMainTagNoPrefix(t *testing.T) {
+	_, tearDown := prepareGit(t)
+	defer tearDown()
+	execMain(t, "--no-prefix")
+	output, err := git("", "tag", "--list")
+	assert.NoError(t, err)
+	assert.Contains(t, output, "0.1.0")
+	assert.NotContains(t, output, "v0.1.0")
 }

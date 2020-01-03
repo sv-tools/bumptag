@@ -215,6 +215,7 @@ type bumptagArgs struct {
 	patch    *bool
 	version  *bool
 	findTag  *bool
+	noPrefix *bool
 }
 
 func (f *bumptagArgs) usage() {
@@ -229,7 +230,8 @@ func (f *bumptagArgs) usage() {
     -n, --minor     Increment the MINOR version (default)
     -p, --patch     Increment the PATCH version
         --version   Show a version of the bumptag tool
-        --find-tag  Show the last tag, can be useful for CI tools`
+        --find-tag  Show the last tag, can be useful for CI tools
+        --no-prefix Create a tag without prefix 'v'`
 	fmt.Println(output)
 }
 
@@ -244,6 +246,7 @@ func newBumptagArgs() *bumptagArgs {
 		patch:    createFlag("patch", "p", false, "Increment the PATCH version"),
 		version:  createFlag("version", "", false, "Show a version of the bumptag tool"),
 		findTag:  createFlag("find-tag", "", false, "Show the latest tag, can be useful for CI tools"),
+		noPrefix: createFlag("no-prefix", "", false, "Create a tag without prefix 'v'"),
 	}
 }
 
@@ -344,7 +347,10 @@ func main() {
 	panicIfError(err)
 
 	setTag(tag, args)
-	tagName = tagPrefix + tag.String()
+	tagName = tag.String()
+	if !*args.noPrefix {
+		tagName = tagPrefix + tagName
+	}
 	annotation := makeAnnotation(changeLog, tagName)
 
 	if *args.edit {
