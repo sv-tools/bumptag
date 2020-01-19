@@ -1,7 +1,8 @@
 # bumptag
 
-[![Test](https://img.shields.io/github/workflow/status/sv-tools/bumptag/Tests)](https://github.com/sv-tools/bumptag/actions?query=workflow%3A%22Tests%22)
+[![Test](https://img.shields.io/github/workflow/status/sv-tools/bumptag/Test%20Master%20Branch)](https://github.com/sv-tools/bumptag/actions?query=workflow%3A%22Test+Master+Branch%22)
 [![Version](https://img.shields.io/github/release/sv-tools/bumptag.svg)](https://github.com/sv-tools/bumptag/releases/)
+[![Codecov](https://img.shields.io/codecov/c/github/sv-tools/bumptag)](https://codecov.io/gh/sv-tools/bumptag)
 
 bumptag is a tool to increment a version and to create a git tag with an annotation
 
@@ -26,6 +27,10 @@ or the [latest release](https://github.com/sv-tools/bumptag/releases/latest).
 
 All builds are signed by gpg key [bumptag@vilgelm.info (43C54856)](https://keys.openpgp.org/search?q=bumptag%40vilgelm.info)
 
+### Docker
+```bash
+docker pull docker.pkg.github.com/sv-tools/bumptag/bumptag:latest
+```
 
 ## Usage
 
