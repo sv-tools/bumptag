@@ -16,12 +16,12 @@ jobs:
       - name: Prepare gpg
         run: |
           gpgconf --kill gpg-agent
-          gpg --quiet --batch --yes --decrypt --passphrase="${{ secrets.GPG_PASSPHRASE }}" --output .github/sv-go-tools-bot.asc .github/sv-go-tools-bot.asc.gpg
-          gpg --batch --yes --import .github/sv-go-tools-bot.asc
+          gpg --quiet --batch --yes --decrypt --passphrase="${{ secrets.GPG_PASSPHRASE }}" --output .github/sv-tools-bot.asc .github/sv-tools-bot.asc.gpg
+          gpg --batch --yes --import .github/sv-tools-bot.asc
       - name: Docker Login
         run: >-
           echo "${{ secrets.BOT_TOKEN }}"
-          | docker login -u sv-go-tools-bot --password-stdin docker.pkg.github.com
+          | docker login -u sv-tools-bot --password-stdin docker.pkg.github.com
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v1
         with:
