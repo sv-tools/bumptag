@@ -1,5 +1,5 @@
 run:
-  skip-dirs-use-default: true
+  skip-dirs-use-default: false
 
 linters:
   enable:
@@ -12,7 +12,6 @@ linters:
     - golint
     - gocognit
     - gocyclo
-    - gocritic
   fast: true
 
 linters-settings:
@@ -23,7 +22,7 @@ linters-settings:
   govet:
     check-shadowing: false
   goimports:
-    local-prefixes: github.com/SVilgelm/bumptag
+    local-prefixes: github.com/sv-tools/bumptag
   gocognit:
     min-complexity: 15
   gocyclo:
@@ -36,6 +35,5 @@ issues:
     - path: _test\.go
       linters:
         - gocyclo
-        - gocognit
         - dupl
         - gosec

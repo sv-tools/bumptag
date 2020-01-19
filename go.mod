@@ -1,4 +1,4 @@
-module github.com/SVilgelm/bumptag
+module github.com/sv-tools/bumptag
 
 go 1.12
 

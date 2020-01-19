@@ -13,3 +13,5 @@
 /coverage.txt
 *.asc
 .build
+
+.github/sv-go-tools-bot.asc

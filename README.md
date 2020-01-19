@@ -1,8 +1,7 @@
 # bumptag
-[![GitHub release](https://img.shields.io/github/release/SVilgelm/bumptag.svg)](https://GitHub.com/SVilgelm/bumptag/releases/)
-![](https://github.com/SVilgelm/bumptag/workflows/Tests/badge.svg)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=SVilgelm_bumptag&metric=alert_status)](https://sonarcloud.io/dashboard?id=SVilgelm_bumptag)
-[![GitHub license](https://img.shields.io/github/license/SVilgelm/bumptag.svg)](https://github.com/SVilgelm/bumptag/blob/master/LICENSE)
+
+[![Test](https://img.shields.io/github/workflow/status/sv-tools/bumptag/Tests)](https://github.com/sv-tools/bumptag/actions?query=workflow%3A%22Tests%22)
+[![Version](https://img.shields.io/github/release/sv-tools/bumptag.svg)](https://github.com/sv-tools/bumptag/releases/)
 
 bumptag is a tool to increment a version and to create a git tag with an annotation
 
@@ -10,19 +9,19 @@ bumptag is a tool to increment a version and to create a git tag with an annotat
 
 ### Using `brew`
 ```bash
-brew install SVilgelm/apps/bumptag
+brew install sv-tools/apps/bumptag
 ```
 
 ### Go way
 To install latest master:
 ```bash
-go get github.com/SVilgelm/bumptag
+go get github.com/sv-tools/bumptag
 ```
 
 ### Binary mode
 
-1. Check the [releases](https://github.com/SVilgelm/bumptag/releases)
-or the [latest release](https://github.com/SVilgelm/bumptag/releases/latest).
+1. Check the [releases](https://github.com/sv-tools/bumptag/releases)
+or the [latest release](https://github.com/sv-tools/bumptag/releases/latest).
 2. Download a build for your OS.
 
 All builds are signed by gpg key [bumptag@vilgelm.info (43C54856)](https://keys.openpgp.org/search?q=bumptag%40vilgelm.info)
