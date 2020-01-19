@@ -1,7 +1,7 @@
 // The bumptag creates a new tag to release a new version of your code.
 //
 // The tool finds the last git tag, increments it and create new tag with a changelog.
-// https://github.com/SVilgelm/bumptag/blob/master/README.md
+// https://github.com/sv-tools/bumptag/blob/master/README.md
 package main
 
 import (
@@ -13,7 +13,6 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -24,21 +23,19 @@ var version = "0.0.0"
 
 const (
 	tagPrefix     = "v"
+	defaultRemote = "origin"
 	defaultEditor = "vim"
 )
 
 func realGit(input string, arg ...string) (string, error) {
-	var (
-		stdout bytes.Buffer
-		stderr bytes.Buffer
-	)
-
 	cmd := exec.Command("git", arg...)
 	if len(input) > 0 {
 		cmd.Stdin = strings.NewReader(input)
 	}
-
+	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
+
+	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
 	if err := cmd.Run(); err != nil {
@@ -64,8 +61,8 @@ func noOutputGit(input string, arg ...string) error {
 }
 
 func disableGPG() (string, error) {
-	output, _ := git("", cConfig, cLocal, cGet, cLogShowSignature)
-	if err := noOutputGit("", cConfig, cLocal, cLogShowSignature, "false"); err != nil {
+	output, _ := git("", "config", "--local", "--get", "log.showSignature")
+	if err := noOutputGit("", "config", "--local", "log.showSignature", "false"); err != nil {
 		return "", err
 	}
 	return output, nil
@@ -73,9 +70,9 @@ func disableGPG() (string, error) {
 
 func restoreGPG(oldValue string) error {
 	if len(oldValue) > 0 {
-		return noOutputGit("", cConfig, cLocal, cLogShowSignature, oldValue)
+		return noOutputGit("", "config", "--local", "log.showSignature", oldValue)
 	}
-	return noOutputGit("", cConfig, cLocal, cUnset, cLogShowSignature)
+	return noOutputGit("", "config", "--local", "--unset", "log.showSignature")
 }
 
 func setUpGPG() (func(), error) {
@@ -98,7 +95,7 @@ func setUpGPG() (func(), error) {
 }
 
 func gitConfig(name, defaultValue string) string {
-	output, err := git("", cConfig, cGet, name)
+	output, err := git("", "config", "--get", name)
 	if err != nil {
 		return defaultValue
 	}
@@ -117,7 +114,7 @@ func gitConfigBool(name string, defaultValue bool) bool {
 func findTag() (*semver.Version, string, error) {
 	currentTag := &semver.Version{}
 	currentTagName := ""
-	output, err := git("", cLog, "--pretty=%D")
+	output, err := git("", "log", "--pretty=%D")
 	if err != nil {
 		return nil, "", err
 	}
@@ -142,7 +139,7 @@ func findTag() (*semver.Version, string, error) {
 }
 
 func createTag(tagName, annotation string, sign bool) error {
-	args := []string{cTag, "-F-"}
+	args := []string{"tag", "-F-"}
 	if sign {
 		args = append(args, "--sign")
 	}
@@ -151,11 +148,11 @@ func createTag(tagName, annotation string, sign bool) error {
 }
 
 func showTag(tagName string) (string, error) {
-	return git("", cShow, tagName)
+	return git("", "show", tagName)
 }
 
 func getChangeLog(tagName string) ([]string, error) {
-	args := []string{cLog, "--pretty=%h %s", "--no-merges"}
+	args := []string{"log", "--pretty=%h %s", "--no-merges"}
 	if len(tagName) > 0 {
 		args = append(args, tagName+"..HEAD")
 	}
@@ -166,24 +163,36 @@ func getChangeLog(tagName string) ([]string, error) {
 	return strings.Split(output, "\n"), nil
 }
 
-var branchRE = regexp.MustCompile(`^\* .+ \[(.+)/.+\]`)
+func parseRemote(remote string) (string, error) {
+	for _, part := range strings.Split(remote, " ") {
+		if strings.HasPrefix(part, "[") {
+			part = strings.Trim(part, "[]")
+			names := strings.SplitN(part, "/", 2)
+			if len(names) != 2 {
+				return "", fmt.Errorf("cannot determine a remote name: %s", part)
+			}
+			return names[0], nil
+		}
+	}
+	return "", fmt.Errorf("remote for the active branch '%s' not found", remote)
+}
 
 func getRemote() (string, error) {
-	output, err := git("", cBranch, "--list", "-vv")
+	output, err := git("", "branch", "--list", "-vv")
 	if err != nil {
 		return "", err
 	}
-	for _, branch := range strings.Split(output, "\n") {
-		matches := branchRE.FindStringSubmatch(branch)
-		if len(matches) > 1 {
-			return matches[1], nil
+	for _, remote := range strings.Split(output, "\n") {
+		remote = strings.TrimSpace(remote)
+		if strings.HasPrefix(remote, "*") {
+			return parseRemote(remote)
 		}
 	}
-	return "", errors.New("remote for current branch not found")
+	return defaultRemote, nil
 }
 
 func pushTag(remote, tagName string) error {
-	return noOutputGit("", cPush, remote, tagName)
+	return noOutputGit("", "push", remote, tagName)
 }
 
 func makeAnnotation(changeLog []string, tagName string) string {
@@ -197,15 +206,16 @@ func makeAnnotation(changeLog []string, tagName string) string {
 	return strings.Join(output, "\n")
 }
 
-func createFlag(name, short string, value bool, usage string) *bool {
-	p := flag.Bool(name, value, usage)
+func createFlag(flagSet *flag.FlagSet, name, short string, value bool, usage string) *bool {
+	p := flagSet.Bool(name, value, usage)
 	if len(short) > 0 {
-		flag.BoolVar(p, short, value, usage)
+		flagSet.BoolVar(p, short, value, usage)
 	}
 	return p
 }
 
 type bumptagArgs struct {
+	flagSet  *flag.FlagSet
 	edit     *bool
 	dryRun   *bool
 	silent   *bool
@@ -215,7 +225,6 @@ type bumptagArgs struct {
 	patch    *bool
 	version  *bool
 	findTag  *bool
-	noPrefix *bool
 }
 
 func (f *bumptagArgs) usage() {
@@ -230,33 +239,38 @@ func (f *bumptagArgs) usage() {
     -n, --minor     Increment the MINOR version (default)
     -p, --patch     Increment the PATCH version
         --version   Show a version of the bumptag tool
-        --find-tag  Show the last tag, can be useful for CI tools
-        --no-prefix Create a tag without prefix 'v'`
+        --find-tag  Show the last tag, can be useful for CI tools`
 	fmt.Println(output)
 }
 
+func (f *bumptagArgs) parse() error {
+	f.flagSet.Usage = f.usage
+	return f.flagSet.Parse(os.Args[1:])
+}
+
 func newBumptagArgs() *bumptagArgs {
+	flagSet := flag.NewFlagSet("Bumptag", flag.ExitOnError)
 	return &bumptagArgs{
-		edit:     createFlag("edit", "e", false, "Edit an annotation"),
-		dryRun:   createFlag("dry-run", "r", false, "Prints an annotation for the new tag"),
-		silent:   createFlag("silent", "s", false, "Do not show the created tag"),
-		autoPush: createFlag("auto-push", "a", false, "Push the created tag automatically"),
-		major:    createFlag("major", "m", false, "Increment the MAJOR version"),
-		minor:    createFlag("minor", "n", false, "Increment the MINOR version (default)"),
-		patch:    createFlag("patch", "p", false, "Increment the PATCH version"),
-		version:  createFlag("version", "", false, "Show a version of the bumptag tool"),
-		findTag:  createFlag("find-tag", "", false, "Show the latest tag, can be useful for CI tools"),
-		noPrefix: createFlag("no-prefix", "", false, "Create a tag without prefix 'v'"),
+		flagSet:  flagSet,
+		edit:     createFlag(flagSet, "edit", "e", false, "Edit an annotation"),
+		dryRun:   createFlag(flagSet, "dry-run", "r", false, "Prints an annotation for the new tag"),
+		silent:   createFlag(flagSet, "silent", "s", false, "Do not show the created tag"),
+		autoPush: createFlag(flagSet, "auto-push", "a", false, "Push the created tag automatically"),
+		major:    createFlag(flagSet, "major", "m", false, "Increment the MAJOR version"),
+		minor:    createFlag(flagSet, "minor", "n", false, "Increment the MINOR version (default)"),
+		patch:    createFlag(flagSet, "patch", "p", false, "Increment the PATCH version"),
+		version:  createFlag(flagSet, "version", "", false, "Show a version of the bumptag tool"),
+		findTag:  createFlag(flagSet, "find-tag", "", false, "Show the latest tag, can be useful for CI tools"),
 	}
 }
 
-func setTag(tag *semver.Version, args *bumptagArgs) {
-	if flag.NArg() > 0 {
-		if err := tag.Set(strings.TrimPrefix(flag.Arg(0), tagPrefix)); err != nil {
+func setTag(flagSet *flag.FlagSet, tag *semver.Version, args *bumptagArgs) {
+	if flagSet.NArg() > 0 {
+		if err := tag.Set(strings.TrimPrefix(flagSet.Arg(0), tagPrefix)); err != nil {
 			panic(err)
 		}
 	} else {
-		switch {
+		switch true {
 		case *args.major:
 			tag.BumpMajor()
 		case *args.minor:
@@ -322,9 +336,7 @@ func edit(annotation string) (string, error) {
 
 func main() {
 	args := newBumptagArgs()
-
-	flag.Usage = args.usage
-	flag.Parse()
+	panicIfError(args.parse())
 
 	if *args.version {
 		fmt.Print(version)
@@ -346,11 +358,8 @@ func main() {
 	changeLog, err := getChangeLog(tagName)
 	panicIfError(err)
 
-	setTag(tag, args)
-	tagName = tag.String()
-	if !*args.noPrefix {
-		tagName = tagPrefix + tagName
-	}
+	setTag(args.flagSet, tag, args)
+	tagName = tagPrefix + tag.String()
 	annotation := makeAnnotation(changeLog, tagName)
 
 	if *args.edit {
@@ -363,7 +372,7 @@ func main() {
 		return
 	}
 
-	sign := gitConfigBool(cCommitGPGSign, false)
+	sign := gitConfigBool("commit.gpgsign", false)
 	panicIfError(createTag(tagName, annotation, sign))
 
 	if *args.autoPush {

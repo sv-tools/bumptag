@@ -414,16 +414,11 @@ func TestUsage(t *testing.T) {
 }
 
 func TestCreateFlag(t *testing.T) {
-	realCommandLine := flag.CommandLine
-	defer func() {
-		flag.CommandLine = realCommandLine
-	}()
-
-	flag.CommandLine = flag.NewFlagSet("test-flag-set-1", flag.ExitOnError)
-	_ = createFlag("test-flag", "t", true, "test-usage")
+	flagSet1 := flag.NewFlagSet("test-flag-set-1", flag.ExitOnError)
+	_ = createFlag(flagSet1, "test-flag", "t", true, "test-usage")
 	cnt := 0
 	names := []string{"test-flag", "t"}
-	flag.CommandLine.VisitAll(func(f *flag.Flag) {
+	flagSet1.VisitAll(func(f *flag.Flag) {
 		cnt++
 		assert.Equal(t, "true", f.DefValue)
 		assert.Equal(t, "test-usage", f.Usage)
@@ -431,10 +426,10 @@ func TestCreateFlag(t *testing.T) {
 	})
 	assert.Equal(t, 2, cnt)
 
-	flag.CommandLine = flag.NewFlagSet("test-flag-set-2", flag.ExitOnError)
-	_ = createFlag("test-flag", "", true, "test-usage")
+	flagSet2 := flag.NewFlagSet("test-flag-set-2", flag.ExitOnError)
+	_ = createFlag(flagSet2, "test-flag", "", true, "test-usage")
 	cnt = 0
-	flag.CommandLine.VisitAll(func(f *flag.Flag) {
+	flagSet2.VisitAll(func(f *flag.Flag) {
 		cnt++
 		assert.Equal(t, "true", f.DefValue)
 		assert.Equal(t, "test-usage", f.Usage)
@@ -458,8 +453,8 @@ func TestGetRemote(t *testing.T) {
 		Git("", "branch", "--list", "-vv").
 		Return("", nil)
 	output, err = getRemote()
-	assert.Error(t, err)
-	assert.Empty(t, output)
+	assert.NoError(t, err)
+	assert.Equal(t, defaultRemote, output)
 
 	ctrl.EXPECT().
 		Git("", "branch", "--list", "-vv").
@@ -669,7 +664,7 @@ func TestMainTagSilent(t *testing.T) {
 func TestMainTagSpecified(t *testing.T) {
 	_, tearDown := prepareGit(t)
 	defer tearDown()
-	execMain(t, "v3.0.3")
+	_, _ = execMain(t, "v3.0.3")
 	output, err := git("", "tag", "--list")
 	assert.NoError(t, err)
 	assert.Contains(t, output, "v3.0.3")
@@ -681,7 +676,7 @@ func TestMainTagMajor(t *testing.T) {
 	_, err := git("", "tag", "v1.1.1")
 	assert.NoError(t, err)
 	prepareCommit()
-	execMain(t, "--major")
+	_, _ = execMain(t, "--major")
 	output, err := git("", "tag", "--list")
 	assert.NoError(t, err)
 	assert.Contains(t, output, "v2.0.0")
@@ -693,7 +688,7 @@ func TestMainTagMinor(t *testing.T) {
 	_, err := git("", "tag", "v1.1.1")
 	assert.NoError(t, err)
 	prepareCommit()
-	execMain(t, "--minor")
+	_, _ = execMain(t, "--minor")
 	output, err := git("", "tag", "--list")
 	assert.NoError(t, err)
 	assert.Contains(t, output, "v1.2.0")
@@ -705,7 +700,7 @@ func TestMainTagPatch(t *testing.T) {
 	_, err := git("", "tag", "v1.1.1")
 	assert.NoError(t, err)
 	prepareCommit()
-	execMain(t, "--patch")
+	_, _ = execMain(t, "--patch")
 	output, err := git("", "tag", "--list")
 	assert.NoError(t, err)
 	assert.Contains(t, output, "v1.1.2")
@@ -715,7 +710,7 @@ func TestMainTagSpecifiedWrong(t *testing.T) {
 	_, tearDown := prepareGit(t)
 	defer tearDown()
 	assert.Panics(t, func() {
-		execMain(t, "v3.0")
+		_, _ = execMain(t, "v3.0")
 	})
 	output, err := git("", "tag", "--list")
 	assert.NoError(t, err)
@@ -752,7 +747,7 @@ func TestMainTagBranch(t *testing.T) {
 	assert.NoError(t, err)
 	prepareCommit()
 
-	execMain(t)
+	_, _ = execMain(t)
 	output, err := git("", "tag", "--list")
 	assert.NoError(t, err)
 	assert.Contains(t, output, "v1.1.0")
@@ -768,14 +763,4 @@ func TestPanicIfError(t *testing.T) {
 		assert.NotNil(t, recover())
 	}()
 	panicIfError(errors.New("fake error"))
-}
-
-func TestMainTagNoPrefix(t *testing.T) {
-	_, tearDown := prepareGit(t)
-	defer tearDown()
-	execMain(t, "--no-prefix")
-	output, err := git("", "tag", "--list")
-	assert.NoError(t, err)
-	assert.Contains(t, output, "0.1.0")
-	assert.NotContains(t, output, "v0.1.0")
 }
