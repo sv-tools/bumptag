@@ -14,4 +14,4 @@
 *.asc
 .build
 
-.github/sv-go-tools-bot.asc
+.github/sv-tools-bot.asc
