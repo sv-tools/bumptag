@@ -1,0 +1,56 @@
+project_name: bumptag
+
+release:
+  github:
+    owner: sv-tools
+    name: bumptag
+
+builds:
+  - binary: bumptag
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+    env:
+      - CGO_ENABLED=0
+    main: ./
+    ldflags: -s -w -X main.version={{ .Tag }}
+
+archives:
+  - format: tar.gz
+    wrap_in_directory: true
+    name_template: "{{ .Binary }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}"
+
+checksum:
+  name_template: "{{ .ProjectName }}-{{ .Tag }}-checksums.txt"
+
+signs:
+  - artifacts: checksum
+
+dockers:
+  - dockerfile: build/Dockerfile
+    goos: linux
+    goarch: amd64
+    binaries:
+      - bumptag
+    image_templates:
+      - "docker.pkg.github.com/sv-tools/{{ .ProjectName }}/{{ .ProjectName }}:latest"
+      - "docker.pkg.github.com/sv-tools/{{ .ProjectName }}/{{ .ProjectName }}:{{ .Tag }}"
+      - "docker.pkg.github.com/sv-tools/{{ .ProjectName }}/{{ .ProjectName }}:v{{ .Major }}"
+    build_flag_templates:
+      - "--label=description=bumptag is a tool to increment a version and to create a git tag with an annotation."
+      - "--label=version={{ .Tag }}"
+      - "--label=homepage=https://github.com/sv-tools/bumptag"
+      - "--label=commit={{ .FullCommit }}"
+      - "--label=date={{ .Date }}"
+
+brews:
+  - github:
+      owner: sv-tools
+      name: homebrew-apps
+    folder: Formula
+    homepage: https://github.com/sv-tools/bumptag
+    description: bumptag is a tool to increment a version and to create a git tag with an annotation.
+    install: bin.install "bumptag"
+    test: assert_equal `#{bin}/bumptag --version`, "v#{version}"
