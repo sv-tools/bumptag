@@ -29,7 +29,7 @@ signs:
   - artifacts: checksum
 
 dockers:
-  - dockerfile: build/Dockerfile
+  - dockerfile: .github/Dockerfile
     goos: linux
     goarch: amd64
     binaries:
