@@ -43,3 +43,5 @@ jobs:
         run: cat test.log
       - name: Codecov
         run: bash <(curl -s https://codecov.io/bash)
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
