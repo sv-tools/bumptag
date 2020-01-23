@@ -35,12 +35,12 @@ dockers:
     binaries:
       - bumptag
     image_templates:
-      - "docker.pkg.github.com/sv-tools/{{ .ProjectName }}/{{ .ProjectName }}:latest"
       - "docker.pkg.github.com/sv-tools/{{ .ProjectName }}/{{ .ProjectName }}:{{ .Tag }}"
       - "docker.pkg.github.com/sv-tools/{{ .ProjectName }}/{{ .ProjectName }}:v{{ .Major }}"
-      - "svtools/{{ .ProjectName }}:latest"
+      - "docker.pkg.github.com/sv-tools/{{ .ProjectName }}/{{ .ProjectName }}:latest"
       - "svtools/{{ .ProjectName }}:{{ .Tag }}"
       - "svtools/{{ .ProjectName }}:v{{ .Major }}"
+      - "svtools/{{ .ProjectName }}:latest"
     build_flag_templates:
       - "--label=description=bumptag is a tool to increment a version and to create a git tag with an annotation."
       - "--label=version={{ .Tag }}"
