@@ -59,6 +59,17 @@ $ git push origin --tags
 
 Or set `--auto-push` flag
 
+### Docker cmd
+
+```bash
+docker run -it --rm -v $PWD:/mount -w /mount docker.pkg.github.com/sv-tools/bumptag/bumptag:latest -r
+```
+
+or
+
+```bash
+docker run -it --rm -v $PWD:/mount -w /mount svtools/bumptag:latest -r
+```
 
 ### Examples:
 
