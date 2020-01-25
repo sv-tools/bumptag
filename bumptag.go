@@ -19,10 +19,12 @@ import (
 	"github.com/coreos/go-semver/semver"
 )
 
-var version = "0.0.0"
+var (
+	version   = "0.0.0"
+	tagPrefix = "v"
+)
 
 const (
-	tagPrefix     = "v"
 	defaultRemote = "origin"
 	defaultEditor = "vim"
 )
@@ -112,30 +114,25 @@ func gitConfigBool(name string, defaultValue bool) bool {
 }
 
 func findTag() (*semver.Version, string, error) {
-	currentTag := &semver.Version{}
-	currentTagName := ""
-	output, err := git("", "log", "--pretty=%D")
+	output, err := git("", "describe", "--tags", "--abbrev=0")
+	if err != nil {
+		if strings.Contains(err.Error(), "No names found") {
+			return &semver.Version{}, "", nil
+		}
+		return nil, "", err
+	}
+	if output == "" {
+		return &semver.Version{}, "", nil
+	}
+	currentTagName := output
+	if !strings.HasPrefix(output, tagPrefix) {
+		tagPrefix = ""
+	}
+	tag, err := semver.NewVersion(strings.TrimPrefix(output, tagPrefix))
 	if err != nil {
 		return nil, "", err
 	}
-	for _, line := range strings.Split(output, "\n") {
-		for _, ref := range strings.Split(line, ",") {
-			ref = strings.TrimSpace(ref)
-			if strings.HasPrefix(ref, "tag:") {
-				rawTag := strings.TrimPrefix(ref, "tag:")
-				rawTag = strings.TrimSpace(rawTag)
-				tag, err := semver.NewVersion(strings.TrimPrefix(rawTag, tagPrefix))
-				if err != nil {
-					continue
-				}
-				if currentTag.LessThan(*tag) {
-					currentTag = tag
-					currentTagName = rawTag
-				}
-			}
-		}
-	}
-	return currentTag, currentTagName, nil
+	return tag, currentTagName, nil
 }
 
 func createTag(tagName, annotation string, sign bool) error {
@@ -347,19 +344,19 @@ func main() {
 	panicIfError(err)
 	defer tearDownGPG()
 
-	tag, tagName, err := findTag()
+	tag, currentTagName, err := findTag()
 	panicIfError(err)
 
 	if *args.findTag {
-		fmt.Print(tagName)
+		fmt.Print(currentTagName)
 		return
 	}
 
-	changeLog, err := getChangeLog(tagName)
+	changeLog, err := getChangeLog(currentTagName)
 	panicIfError(err)
 
 	setTag(args.flagSet, tag, args)
-	tagName = tagPrefix + tag.String()
+	tagName := tagPrefix + tag.String()
 	annotation := makeAnnotation(changeLog, tagName)
 
 	if *args.edit {
