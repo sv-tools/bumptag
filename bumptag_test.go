@@ -298,13 +298,13 @@ func TestFindTag(t *testing.T) {
 	defer tearDown()
 
 	ctrl.EXPECT().
-		Git("", "log", "--pretty=%D").
+		Git("", "describe", "--tags", "--abbrev=0").
 		Return("", errors.New("test-error"))
 	_, _, err := findTag()
 	assert.Error(t, err)
 
 	ctrl.EXPECT().
-		Git("", "log", "--pretty=%D").
+		Git("", "describe", "--tags", "--abbrev=0").
 		Return("", nil)
 	tag, tagName, err := findTag()
 	assert.NoError(t, err)
@@ -312,22 +312,17 @@ func TestFindTag(t *testing.T) {
 	assert.Equal(t, "0.0.0", tag.String())
 
 	ctrl.EXPECT().
-		Git("", "log", "--pretty=%D").
-		Return(
-			`
-HEAD -> master, tag: v3.1.0, tag: v3.0.1, origin/master
-test_branch
-tag: v3.0.0
-tag: v2.1.0, sv/master, origin/v2
-tag: v2.0.1
-tag: v2.0.0
-tag: not_a_version
-origin/test_branch
-tag: v1.0.0, origin/v1.0`, nil)
-	tag, tagName, err = findTag()
-	assert.NoError(t, err)
-	assert.Equal(t, "v3.1.0", tagName)
-	assert.Equal(t, "3.1.0", tag.String())
+		Git("", "describe", "--tags", "--abbrev=0").
+		Return("text-tag", nil)
+	_, _, err = findTag()
+	assert.Error(t, err)
+
+	tagPrefix = "v"
+	ctrl.EXPECT().
+		Git("", "describe", "--tags", "--abbrev=0").
+		Return("v-text-tag", nil)
+	_, _, err = findTag()
+	assert.Error(t, err)
 }
 
 func TestCreateTag(t *testing.T) {
@@ -626,6 +621,7 @@ func TestMainFindTag(t *testing.T) {
 	defer tearDown()
 	stdout, _ := execMain(t, "--find-tag")
 	assert.Empty(t, stdout)
+	tagPrefix = "v"
 	_, err := git("", "tag", "v1.0.1")
 	assert.NoError(t, err)
 	stdout, _ = execMain(t, "--find-tag")
