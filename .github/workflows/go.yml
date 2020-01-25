@@ -5,9 +5,6 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    env:
-      LINT_VERSION: "v1.23.1"
-      NANCY_VERSION: "v0.0.41"
     steps:
       - name: Install Go
         uses: actions/setup-go@v1
@@ -15,25 +12,12 @@ jobs:
           go-version: 1.13.x
       - name: Checkout code
         uses: actions/checkout@v1
-      - name: Cache Tools
-        id: cache-tools
-        uses: actions/cache@v1
-        with:
-          path: ~/tools
-          key: ${{ runner.os }}-tools-${LINT_VERSION}-${NANCY_VERSION}
-      - name: Install Tools
-        if: steps.cache-tools.outputs.cache-hit != 'true'
-        run: |
-          mkdir -p ~/tools
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ~/tools ${LINT_VERSION}
-          curl -L https://github.com/sonatype-nexus-community/nancy/releases/download/${NANCY_VERSION}/nancy-linux.amd64-${NANCY_VERSION} -o ~/tools/nancy
-          chmod +x ~/tools/nancy
-      - name: Update PATH
-        run: echo "::add-path::~/tools"
-      - name: lint
-        run: golangci-lint run ./...
       - name: nancy
-        run: nancy go.sum
+        uses: sonatype-nexus-community/nancy-github-action@master
+        with:
+          target: go.sum
+      - name: golangci-lint
+        run: docker run --rm -v ${PWD}:/app -w /app golangci/golangci-lint:latest-alpine golangci-lint run
       - name: unittests
         run: go test -race -cover -coverprofile=coverage.txt -covermode=atomic -cpu 1,2 -bench . -benchmem ./... > test.log
       - name: Show log
