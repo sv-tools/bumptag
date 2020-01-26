@@ -17,13 +17,19 @@ jobs:
         with:
           target: go.sum
       - name: golangci-lint
-        run: docker run --rm -v ${PWD}:/app -w /app golangci/golangci-lint:latest-alpine golangci-lint run
+        env:
+          GOROOT: /go
+        run: |
+          docker pull golangci/golangci-lint:latest-alpine
+          docker run --rm -v ${PWD}:/app -w /app golangci/golangci-lint:latest-alpine golangci-lint run
       - name: unittests
         run: go test -race -cover -coverprofile=coverage.txt -covermode=atomic -cpu 1,2 -bench . -benchmem ./... > test.log
       - name: Show log
         if: always()
         run: cat test.log
       - name: Codecov
-        run: bash <(curl -s https://codecov.io/bash)
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.txt
+          yml: ./.codecov.yml
