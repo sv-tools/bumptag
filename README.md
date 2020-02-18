@@ -48,6 +48,8 @@ Usage: bumptag [<tagname>]
     -p, --patch     Increment the PATCH version
         --version   Show a version of the bumptag tool
         --find-tag  Show the last tag, can be useful for CI tools
+
+    The change log is automatically generated from git commits from the previous tag or can be passed by <stdin>.
 ```
 
 The script generates an annotation with all commits merged since the last tag.
@@ -57,7 +59,7 @@ To push new tag use:
 $ git push origin --tags
 ```
 
-Or set `--auto-push` flag
+Or use `--auto-push` flag
 
 ### Docker cmd
 

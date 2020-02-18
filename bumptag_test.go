@@ -129,6 +129,22 @@ func mockStdout(t testing.TB) (read func() string, tearDown func()) {
 	return
 }
 
+func mockStdin(t testing.TB, s string) func() {
+	reader, writer, err := os.Pipe()
+	assert.NoError(t, err)
+
+	realStdin := os.Stdin
+	os.Stdin = reader
+	t.Logf("mockStdin input: %s", s)
+	_, err = writer.WriteString(s)
+	assert.NoError(t, err)
+	err = writer.Close()
+	assert.NoError(t, err)
+	return func() {
+		os.Stdin = realStdin
+	}
+}
+
 func mockArgs(t testing.TB, arg ...string) func() {
 	realArgs := os.Args
 	os.Args = append([]string{"bumptag"}, arg...)
@@ -368,7 +384,15 @@ func TestShowTag(t *testing.T) {
 	assert.Equal(t, "test-error", err.Error())
 }
 
-func TestGetChangeLog(t *testing.T) {
+func TestGetChangeLogStdin(t *testing.T) {
+	tearDown := mockStdin(t, "test-stdin-changelog")
+	defer tearDown()
+	output, err := getChangeLog("test-tag")
+	assert.NoError(t, err)
+	assert.Equal(t, "test-stdin-changelog", output)
+}
+
+func TestGetChangeLogGitCommits(t *testing.T) {
 	ctrl, tearDown := mockGit(t)
 	defer tearDown()
 
@@ -377,14 +401,14 @@ func TestGetChangeLog(t *testing.T) {
 		Return("test-output", nil)
 	output, err := getChangeLog("test-tag")
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"test-output"}, output)
+	assert.Equal(t, "* test-output", output)
 
 	ctrl.EXPECT().
 		Git("", "log", "--pretty=%h %s", "--no-merges").
 		Return("test-output", nil)
 	output, err = getChangeLog("")
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"test-output"}, output)
+	assert.Equal(t, "* test-output", output)
 
 	ctrl.EXPECT().
 		Git("", "log", "--pretty=%h %s", "--no-merges").
@@ -395,7 +419,7 @@ func TestGetChangeLog(t *testing.T) {
 }
 
 func TestMakeAnnotation(t *testing.T) {
-	output := makeAnnotation([]string{"test-changelog"}, "test-tag")
+	output := makeAnnotation("test-changelog", "test-tag")
 	assert.Contains(t, output, "test-changelog")
 	assert.Contains(t, output, "test-tag")
 }
@@ -759,4 +783,17 @@ func TestPanicIfError(t *testing.T) {
 		assert.NotNil(t, recover())
 	}()
 	panicIfError(errors.New("fake error"))
+}
+
+func TestMainEdit(t *testing.T) {
+	prepareCommit, tearDown := prepareGit(t)
+	defer tearDown()
+	_, err := git("", "tag", "v1.1.1")
+	assert.NoError(t, err)
+	prepareCommit()
+	os.Setenv("EDITOR", "true")
+	_, _ = execMain(t, "--edit")
+	output, err := git("", "tag", "--list")
+	assert.NoError(t, err)
+	assert.Contains(t, output, "v1.2.0")
 }
