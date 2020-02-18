@@ -148,16 +148,29 @@ func showTag(tagName string) (string, error) {
 	return git("", "show", tagName)
 }
 
-func getChangeLog(tagName string) ([]string, error) {
+func getChangeLog(tagName string) (string, error) {
+	stat, _ := os.Stdin.Stat()
+	if (stat.Mode() & os.ModeCharDevice) == 0 {
+		output, err := ioutil.ReadAll(os.Stdin)
+		if err != nil {
+			return "", err
+		}
+		return string(output), nil
+	}
+
 	args := []string{"log", "--pretty=%h %s", "--no-merges"}
 	if len(tagName) > 0 {
 		args = append(args, tagName+"..HEAD")
 	}
 	output, err := git("", args...)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return strings.Split(output, "\n"), nil
+	var res []string
+	for _, line := range strings.Split(output, "\n") {
+		res = append(res, "* "+line)
+	}
+	return strings.Join(res, "\n"), nil
 }
 
 func parseRemote(remote string) (string, error) {
@@ -192,13 +205,11 @@ func pushTag(remote, tagName string) error {
 	return noOutputGit("", "push", remote, tagName)
 }
 
-func makeAnnotation(changeLog []string, tagName string) string {
+func makeAnnotation(changeLog string, tagName string) string {
 	output := []string{
 		"Bump version " + tagName,
 		"",
-	}
-	for _, line := range changeLog {
-		output = append(output, "* "+line)
+		changeLog,
 	}
 	return strings.Join(output, "\n")
 }
@@ -236,7 +247,9 @@ func (f *bumptagArgs) usage() {
     -n, --minor     Increment the MINOR version (default)
     -p, --patch     Increment the PATCH version
         --version   Show a version of the bumptag tool
-        --find-tag  Show the last tag, can be useful for CI tools`
+        --find-tag  Show the last tag, can be useful for CI tools
+
+    The change log is automatically generated from git commits from the previous tag or can be passed by <stdin>.`
 	fmt.Println(output)
 }
 
@@ -291,14 +304,23 @@ func openEditor(filename string) error {
 	if editor == "" {
 		editor = defaultEditor
 	}
-
 	executable, err := exec.LookPath(editor)
 	if err != nil {
 		return err
 	}
 
+	tty := os.Stdin
+	stat, _ := tty.Stat()
+	if (stat.Mode() & os.ModeCharDevice) == 0 {
+		tty, err = os.Open("/dev/tty")
+		if err != nil {
+			return err
+		}
+		defer tty.Close()
+	}
+
 	cmd := exec.Command(executable, filename)
-	cmd.Stdin = os.Stdin
+	cmd.Stdin = tty
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
