@@ -114,15 +114,16 @@ func gitConfigBool(name string, defaultValue bool) bool {
 }
 
 func findTag() (*semver.Version, string, error) {
-	output, err := git("", "describe", "--tags", "--abbrev=0")
+	output, err := git("", "tag")
 	if err != nil {
-		if strings.Contains(err.Error(), "No names found") {
-			return &semver.Version{}, "", nil
-		}
 		return nil, "", err
 	}
 	if output == "" {
 		return &semver.Version{}, "", nil
+	}
+	output, err = git("", "describe", "--tags", "--abbrev=0")
+	if err != nil {
+		return nil, "", err
 	}
 	currentTagName := output
 	if !strings.HasPrefix(output, tagPrefix) {
