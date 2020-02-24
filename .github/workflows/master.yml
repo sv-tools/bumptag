@@ -13,7 +13,7 @@ jobs:
         with:
           go-version: 1.13.x
       - name: Checkout code
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
       - name: unittests
         run: go test -race -cover -coverprofile=coverage.txt -covermode=atomic -cpu 1,2 -bench . -benchmem ./... > test.log
       - name: Show log
