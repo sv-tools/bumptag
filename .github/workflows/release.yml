@@ -3,8 +3,35 @@ on:
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
+  milestone:
+    types: [closed]
+
 jobs:
+  bump-version:
+    if: github.event_name == 'milestone'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.13.x
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.BOT_TOKEN }}
+      - name: Configure Git
+        run: |
+          git config user.name "sv-tools-bot"
+          git config user.email "sv.go.tools@gmail.com"
+          git fetch --all
+          git describe --tags --abbrev=0
+      - name: Create Tag
+        run: |
+          docker run --rm -v $PWD:/mount -w /mount svtools/bumptag:latest ${{ github.event.milestone.title }}
+      - name: Push Tag
+        run: git push origin --tags
   build:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
@@ -12,7 +39,7 @@ jobs:
         with:
           go-version: 1.13.x
       - name: Checkout code
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
       - name: Prepare gpg
         run: |
           gpgconf --kill gpg-agent
