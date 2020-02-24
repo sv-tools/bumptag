@@ -314,29 +314,49 @@ func TestFindTag(t *testing.T) {
 	defer tearDown()
 
 	ctrl.EXPECT().
-		Git("", "describe", "--tags", "--abbrev=0").
-		Return("", errors.New("test-error"))
+		Git("", "tag").Return("", errors.New("test-error"))
 	_, _, err := findTag()
-	assert.Error(t, err)
+	assert.Error(t, err, "test-error")
 
 	ctrl.EXPECT().
-		Git("", "describe", "--tags", "--abbrev=0").
-		Return("", nil)
+		Git("", "tag").Return("", nil)
 	tag, tagName, err := findTag()
 	assert.NoError(t, err)
 	assert.Equal(t, "", tagName)
 	assert.Equal(t, "0.0.0", tag.String())
 
+	tagCall := ctrl.EXPECT().
+		Git("", "tag").Return("text-tag", nil)
 	ctrl.EXPECT().
 		Git("", "describe", "--tags", "--abbrev=0").
-		Return("text-tag", nil)
+		Return("", errors.New("test-error")).After(tagCall)
+	_, _, err = findTag()
+	assert.Error(t, err, "test-error")
+
+	tagCall = ctrl.EXPECT().
+		Git("", "tag").Return("text-tag", nil)
+	ctrl.EXPECT().
+		Git("", "describe", "--tags", "--abbrev=0").
+		Return("1.2.3", nil).After(tagCall)
+	tag, tagName, err = findTag()
+	assert.NoError(t, err)
+	assert.Equal(t, "1.2.3", tagName)
+	assert.Equal(t, "1.2.3", tag.String())
+
+	tagCall = ctrl.EXPECT().
+		Git("", "tag").Return("text-tag", nil)
+	ctrl.EXPECT().
+		Git("", "describe", "--tags", "--abbrev=0").
+		Return("text-tag", nil).After(tagCall)
 	_, _, err = findTag()
 	assert.Error(t, err)
 
 	tagPrefix = "v"
+	tagCall = ctrl.EXPECT().
+		Git("", "tag").Return("text-tag", nil)
 	ctrl.EXPECT().
 		Git("", "describe", "--tags", "--abbrev=0").
-		Return("v-text-tag", nil)
+		Return("v-text-tag", nil).After(tagCall)
 	_, _, err = findTag()
 	assert.Error(t, err)
 }
