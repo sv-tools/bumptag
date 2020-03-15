@@ -5,6 +5,8 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+"
   milestone:
     types: [closed]
+env:
+  GO: 1.14.x
 
 jobs:
   bump-version:
@@ -14,7 +16,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v1
         with:
-          go-version: 1.13.x
+          go-version: ${{ env.GO }}
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -37,7 +39,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v1
         with:
-          go-version: 1.13.x
+          go-version: ${{ env.GO }}
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Prepare gpg
