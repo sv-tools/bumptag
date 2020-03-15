@@ -1,6 +1,8 @@
 name: Tests Pull Request
 on:
   - pull_request
+env:
+  GO: 1.14.x
 
 jobs:
   tests:
@@ -9,7 +11,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v1
         with:
-          go-version: 1.13.x
+          go-version: ${{ env.GO }}
       - name: Checkout code
         uses: actions/checkout@v2
       - name: nancy
