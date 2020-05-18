@@ -57,3 +57,13 @@ brews:
     description: bumptag is a tool to increment a version and to create a git tag with an annotation.
     install: bin.install "bumptag"
     test: assert_equal `#{bin}/bumptag --version`, "v#{version}"
+
+snapcrafts:
+  - name_template: "{{ .ProjectName }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}"
+    summary: bumptag is a tool to increment a version and to create a git tag with an annotation.
+    description: |
+      bumptag is a tool to increment a version and to create a git tag with an annotation.
+    grade: stable
+    confinement: strict
+    publish: true
+    license: MIT
