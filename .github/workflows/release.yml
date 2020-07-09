@@ -65,7 +65,7 @@ jobs:
         run: |
           snapcraft login --with <(echo "$SNAPCRAFT_LOGIN")
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v1
+        uses: goreleaser/goreleaser-action@v2
         with:
           version: latest
           args: release --rm-dist
