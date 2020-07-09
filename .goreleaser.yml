@@ -49,7 +49,7 @@ dockers:
       - "--label=date={{ .Date }}"
 
 brews:
-  - github:
+  - tap:
       owner: sv-tools
       name: homebrew-apps
     folder: Formula
