@@ -4,6 +4,11 @@ updates:
     directory: "/"
     schedule:
       interval: daily
-    open-pull-requests-limit: 10
+    assignees:
+      - svilgelm
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
     assignees:
       - svilgelm
