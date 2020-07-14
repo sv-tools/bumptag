@@ -25,12 +25,11 @@ jobs:
           docker pull golangci/golangci-lint:latest-alpine
           docker run --rm -v ${PWD}:/app -w /app golangci/golangci-lint:latest-alpine golangci-lint run
       - name: unittests
-        run: go test -race -cover -coverprofile=coverage.txt -covermode=atomic -cpu 1,2 -bench . -benchmem ./... > test.log
+        run: go test -race -cover -coverprofile=coverage.out -covermode=atomic -cpu 1,2 -bench . -benchmem ./... > test.log
       - name: Show log
         if: always()
         run: cat test.log
       - name: Codecov
         uses: codecov/codecov-action@v1.0.10
         with:
-          file: ./coverage.txt
-          yml: ./.codecov.yml
+          file: ./coverage.out
