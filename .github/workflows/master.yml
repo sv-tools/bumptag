@@ -17,13 +17,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: unittests
-        run: go test -race -cover -coverprofile=coverage.txt -covermode=atomic -cpu 1,2 -bench . -benchmem ./... > test.log
+        run: go test -race -cover -coverprofile=coverage.out -covermode=atomic -cpu 1,2 -bench . -benchmem ./... > test.log
       - name: Show log
         if: always()
         run: cat test.log
       - name: Codecov
         uses: codecov/codecov-action@v1.0.10
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.txt
-          yml: ./.codecov.yml
+          file: ./coverage.out
