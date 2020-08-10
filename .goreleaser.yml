@@ -25,7 +25,7 @@ builds:
 archives:
   - format: tar.gz
     wrap_in_directory: true
-    name_template: "{{ .Binary }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}"
+    name_template: "{{ .Binary }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}{{if .Arm}}v{{.Arm}}{{end}}"
 
 checksum:
   name_template: "{{ .ProjectName }}-{{ .Tag }}-checksums.txt"
@@ -35,13 +35,8 @@ signs:
 
 dockers:
   - dockerfile: .github/Dockerfile
-    goos: linux
-    goarch: amd64
     binaries:
       - bumptag
-    tag_templates:
-      - "{{ .Arch }}{{if .Arm}}v{{.Arm}}{{end}}-{{ .Tag }}"
-      - "{{ .Arch }}{{if .Arm}}v{{.Arm}}{{end}}-latest"
     image_templates:
       - "docker.pkg.github.com/sv-tools/{{ .ProjectName }}/{{ .ProjectName }}:{{ .Tag }}"
       - "docker.pkg.github.com/sv-tools/{{ .ProjectName }}/{{ .ProjectName }}:v{{ .Major }}"
@@ -67,7 +62,7 @@ brews:
     test: assert_equal `#{bin}/bumptag --version`, "v#{version}"
 
 snapcrafts:
-  - name_template: "{{ .ProjectName }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}"
+  - name_template: "{{ .ProjectName }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}{{if .Arm}}v{{.Arm}}{{end}}"
     summary: bumptag is a tool to increment a version and to create a git tag with an annotation.
     description: |
       bumptag is a tool to increment a version and to create a git tag with an annotation.
