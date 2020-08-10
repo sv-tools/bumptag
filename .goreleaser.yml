@@ -12,6 +12,11 @@ builds:
       - linux
     goarch:
       - amd64
+      - arm
+      - arm64
+    goarm:
+      - 6
+      - 7
     env:
       - CGO_ENABLED=0
     main: ./
@@ -34,6 +39,9 @@ dockers:
     goarch: amd64
     binaries:
       - bumptag
+    tag_templates:
+      - "{{ .Arch }}{{if .Arm}}v{{.Arm}}{{end}}-{{ .Tag }}"
+      - "{{ .Arch }}{{if .Arm}}v{{.Arm}}{{end}}-latest"
     image_templates:
       - "docker.pkg.github.com/sv-tools/{{ .ProjectName }}/{{ .ProjectName }}:{{ .Tag }}"
       - "docker.pkg.github.com/sv-tools/{{ .ProjectName }}/{{ .ProjectName }}:v{{ .Major }}"
