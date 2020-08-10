@@ -129,6 +129,11 @@ func findTag() (*semver.Version, string, error) {
 	if !strings.HasPrefix(output, tagPrefix) {
 		tagPrefix = ""
 	}
+	dotParts := strings.SplitN(output, ".", 3)
+	for i := 3 - len(dotParts); i > 0; i-- {
+		output += ".0"
+	}
+
 	tag, err := semver.NewVersion(strings.TrimPrefix(output, tagPrefix))
 	if err != nil {
 		return nil, "", err
