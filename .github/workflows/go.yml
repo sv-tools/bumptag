@@ -14,10 +14,10 @@ jobs:
           go-version: ${{ env.GO }}
       - name: Checkout code
         uses: actions/checkout@v2
+      - name: WriteGoList
+        run: go list -json -m all > go.list
       - name: nancy
         uses: sonatype-nexus-community/nancy-github-action@main
-        with:
-          target: go.sum
       - name: golangci-lint
         env:
           GOROOT: /go
