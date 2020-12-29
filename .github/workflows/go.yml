@@ -8,18 +8,23 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: golangci-lint-before
+        uses: golangci/golangci-lint-action@fix-75
+      - run: go version
       - name: Install Go
         uses: actions/setup-go@v2
         with:
           go-version: ${{ env.GO }}
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - run: go version
       - name: WriteGoList
         run: go list -json -m all > go.list
       - name: nancy
         uses: sonatype-nexus-community/nancy-github-action@main
-      - name: golangci-lint
+      - name: golangci-lint-after
         uses: golangci/golangci-lint-action@fix-75
+      - run: go version
       - name: unittests
         run: go test -race -cover -coverprofile=coverage.out -covermode=atomic -cpu 1,2 -bench . -benchmem ./... > test.log
       - name: Show log
