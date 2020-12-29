@@ -8,7 +8,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - run: go version || true
+      - run: go version
       - name: golangci-lint
         uses: golangci/golangci-lint-action@fix-75
       - run: go version
