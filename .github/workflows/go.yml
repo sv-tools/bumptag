@@ -2,7 +2,7 @@ name: Tests Pull Request
 on:
   - pull_request
 env:
-  GO: 1.14.x
+  GO: 1.15.x
 
 jobs:
   tests:
