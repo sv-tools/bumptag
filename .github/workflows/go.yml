@@ -1,8 +1,6 @@
 name: Tests Pull Request
 on:
   - pull_request
-env:
-  GO: 1.15.x
 
 jobs:
   tests:
@@ -14,16 +12,8 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@fix-75
       - run: go version
-      - name: WriteGoList
-        run: go list -json -m all > go.list
-      - name: nancy
-        uses: sonatype-nexus-community/nancy-github-action@main
       - name: unittests
         run: go test -race -cover -coverprofile=coverage.out -covermode=atomic -cpu 1,2 -bench . -benchmem ./... > test.log
       - name: Show log
         if: always()
         run: cat test.log
-      - name: Codecov
-        uses: codecov/codecov-action@v1.1.1
-        with:
-          file: ./coverage.out
