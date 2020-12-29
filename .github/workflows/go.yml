@@ -14,7 +14,7 @@ jobs:
         with:
           skip-go-installation: true
       - run: go version
-      - run: echo "The golangci-lint is installed ${{ steps.lint.outputs.path }}"
+      - run: which golangci-lint
       - name: unittests
         run: go test -race -cover -coverprofile=coverage.out -covermode=atomic -cpu 1,2 -bench . -benchmem ./... > test.log
       - name: Show log
