@@ -11,6 +11,8 @@ jobs:
       - run: go version
       - name: golangci-lint
         uses: golangci/golangci-lint-action@fix-75
+        with:
+          skip-go-installation: true
       - run: go version
       - name: unittests
         run: go test -race -cover -coverprofile=coverage.out -covermode=atomic -cpu 1,2 -bench . -benchmem ./... > test.log
