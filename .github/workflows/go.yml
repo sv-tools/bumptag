@@ -30,6 +30,6 @@ jobs:
         if: always()
         run: cat test.log
       - name: Codecov
-        uses: codecov/codecov-action@v1.1.1
+        uses: codecov/codecov-action@v1.2.1
         with:
           file: ./coverage.out
