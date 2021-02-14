@@ -2,7 +2,7 @@ name: Tests Pull Request
 on:
   - pull_request
 env:
-  GO: 1.14.x
+  GO: 1.15.x
 
 jobs:
   tests:
@@ -19,11 +19,9 @@ jobs:
       - name: nancy
         uses: sonatype-nexus-community/nancy-github-action@main
       - name: golangci-lint
-        env:
-          GOROOT: /go
-        run: |
-          docker pull golangci/golangci-lint:latest-alpine
-          docker run --rm -v ${PWD}:/app -w /app golangci/golangci-lint:latest-alpine golangci-lint run
+        uses: golangci/golangci-lint-action@v2.4.0
+        with:
+          skip-go-installation: true
       - name: unittests
         run: go test -race -cover -coverprofile=coverage.out -covermode=atomic -cpu 1,2 -bench . -benchmem ./... > test.log
       - name: Show log
