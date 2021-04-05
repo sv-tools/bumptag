@@ -19,7 +19,7 @@ jobs:
       - name: nancy
         uses: sonatype-nexus-community/nancy-github-action@main
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2.5.1
+        uses: golangci/golangci-lint-action@v2.5.2
         with:
           skip-go-installation: true
       - name: unittests
