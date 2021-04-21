@@ -6,17 +6,13 @@ release:
     name: bumptag
 
 builds:
-  - binary: bumptag
+  - binary: "{{ .ProjectName }}"
     goos:
       - darwin
       - linux
     goarch:
       - amd64
-      - arm
       - arm64
-    goarm:
-      - 6
-      - 7
     env:
       - CGO_ENABLED=0
     main: ./
@@ -25,7 +21,7 @@ builds:
 archives:
   - format: tar.gz
     wrap_in_directory: true
-    name_template: "{{ .Binary }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}{{if .Arm}}v{{.Arm}}{{end}}"
+    name_template: "{{ .Binary }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}"
 
 checksum:
   name_template: "{{ .ProjectName }}-{{ .Tag }}-checksums.txt"
@@ -34,38 +30,115 @@ signs:
   - artifacts: checksum
 
 dockers:
-  - dockerfile: .github/Dockerfile
-    binaries:
-      - bumptag
-    image_templates:
-      - "docker.pkg.github.com/sv-tools/{{ .ProjectName }}/{{ .ProjectName }}:{{ .Tag }}"
-      - "docker.pkg.github.com/sv-tools/{{ .ProjectName }}/{{ .ProjectName }}:v{{ .Major }}"
-      - "docker.pkg.github.com/sv-tools/{{ .ProjectName }}/{{ .ProjectName }}:latest"
-      - "svtools/{{ .ProjectName }}:{{ .Tag }}"
-      - "svtools/{{ .ProjectName }}:v{{ .Major }}"
-      - "svtools/{{ .ProjectName }}:latest"
+  - image_templates: ["ghcr.io/sv-tools/{{ .ProjectName }}:{{ .Tag }}-amd64"]
+    dockerfile: .github/Dockerfile
+    use_buildx: true
+    goarch: amd64
     build_flag_templates:
-      - "--label=description=bumptag is a tool to increment a version and to create a git tag with an annotation."
-      - "--label=version={{ .Tag }}"
-      - "--label=homepage=https://github.com/sv-tools/bumptag"
-      - "--label=commit={{ .FullCommit }}"
-      - "--label=date={{ .Date }}"
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.description=bumptag is a tool to increment a version and to create a git tag with an annotation"
+      - "--label=org.opencontainers.image.url={{ .GitURL }}"
+      - "--label=org.opencontainers.image.source={{ .GitURL }}"
+      - "--label=org.opencontainers.image.version={{ .Tag }}"
+      - '--label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}'
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.licenses=MIT"
+  - image_templates: ["ghcr.io/sv-tools/{{ .ProjectName }}:{{ .Tag }}-arm64v8"]
+    dockerfile: .github/Dockerfile
+    use_buildx: true
+    goarch: arm64
+    build_flag_templates:
+      - "--platform=linux/arm64/v8"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.description=bumptag is a tool to increment a version and to create a git tag with an annotation"
+      - "--label=org.opencontainers.image.url={{ .GitURL }}"
+      - "--label=org.opencontainers.image.source={{ .GitURL }}"
+      - "--label=org.opencontainers.image.version={{ .Tag }}"
+      - '--label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}'
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.licenses=MIT"
+  - image_templates: ["svtools/{{ .ProjectName }}:{{ .Tag }}-amd64"]
+    dockerfile: .github/Dockerfile
+    use_buildx: true
+    goarch: amd64
+    build_flag_templates:
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.description=bumptag is a tool to increment a version and to create a git tag with an annotation"
+      - "--label=org.opencontainers.image.url={{ .GitURL }}"
+      - "--label=org.opencontainers.image.source={{ .GitURL }}"
+      - "--label=org.opencontainers.image.version={{ .Tag }}"
+      - '--label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}'
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.licenses=MIT"
+  - image_templates: ["svtools/{{ .ProjectName }}:{{ .Tag }}-arm64v8"]
+    dockerfile: .github/Dockerfile
+    use_buildx: true
+    goarch: arm64
+    build_flag_templates:
+      - "--platform=linux/arm64/v8"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.description=bumptag is a tool to increment a version and to create a git tag with an annotation"
+      - "--label=org.opencontainers.image.url={{ .GitURL }}"
+      - "--label=org.opencontainers.image.source={{ .GitURL }}"
+      - "--label=org.opencontainers.image.version={{ .Tag }}"
+      - '--label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}'
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.licenses=MIT"
+
+docker_manifests:
+  - name_template: "ghcr.io/sv-tools/{{ .ProjectName }}:{{ .Tag }}"
+    image_templates:
+      - "ghcr.io/sv-tools/{{ .ProjectName }}:{{ .Tag }}-amd64"
+      - "ghcr.io/sv-tools/{{ .ProjectName }}:{{ .Tag }}-arm64v8"
+    create_flags:
+      - --amend
+  - name_template: "ghcr.io/sv-tools/{{ .ProjectName }}:latest"
+    image_templates:
+      - "ghcr.io/sv-tools/{{ .ProjectName }}:{{ .Tag }}-amd64"
+      - "ghcr.io/sv-tools/{{ .ProjectName }}:{{ .Tag }}-arm64v8"
+    create_flags:
+      - --amend
+  - name_template: "ghcr.io/sv-tools/{{ .ProjectName }}:v{{ .Major }}"
+    image_templates:
+      - "ghcr.io/sv-tools/{{ .ProjectName }}:{{ .Tag }}-amd64"
+      - "ghcr.io/sv-tools/{{ .ProjectName }}:{{ .Tag }}-arm64v8"
+    create_flags:
+      - --amend
+  - name_template: "svtools/{{ .ProjectName }}:{{ .Tag }}"
+    image_templates:
+      - "svtools/{{ .ProjectName }}:{{ .Tag }}-amd64"
+      - "svtools/{{ .ProjectName }}:{{ .Tag }}-arm64v8"
+    create_flags:
+      - --amend
+  - name_template: "svtools/{{ .ProjectName }}:latest"
+    image_templates:
+      - "svtools/{{ .ProjectName }}:{{ .Tag }}-amd64"
+      - "svtools/{{ .ProjectName }}:{{ .Tag }}-arm64v8"
+    create_flags:
+      - --amend
+  - name_template: "svtools/{{ .ProjectName }}:v{{ .Major }}"
+    image_templates:
+      - "svtools/{{ .ProjectName }}:{{ .Tag }}-amd64"
+      - "svtools/{{ .ProjectName }}:{{ .Tag }}-arm64v8"
+    create_flags:
+      - --amend
 
 brews:
   - tap:
       owner: sv-tools
       name: homebrew-apps
     folder: Formula
-    homepage: https://github.com/sv-tools/bumptag
-    description: bumptag is a tool to increment a version and to create a git tag with an annotation.
-    install: bin.install "bumptag"
-    test: assert_equal `#{bin}/bumptag --version`, "v#{version}"
+    homepage: https://github.com/sv-tools/grade
+    description: bumptag is a tool to increment a version and to create a git tag with an annotation
+    install: bin.install "{{ .ProjectName }}"
+    test: assert_equal `#{bin}/{{ .ProjectName }} --version`, "{{ .ProjectName }} version v#{version}"
 
 snapcrafts:
-  - name_template: "{{ .ProjectName }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}{{if .Arm}}v{{.Arm}}{{end}}"
-    summary: bumptag is a tool to increment a version and to create a git tag with an annotation.
-    description: |
-      bumptag is a tool to increment a version and to create a git tag with an annotation.
+  - name_template: "{{ .ProjectName }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}"
+    summary: bumptag is a tool to increment a version and to create a git tag with an annotation
+    description: bumptag is a tool to increment a version and to create a git tag with an annotation
     grade: stable
     confinement: strict
     publish: true
