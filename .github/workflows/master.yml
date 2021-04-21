@@ -2,9 +2,9 @@ name: Test Master Branch
 on:
   push:
     branches:
-      - master
+      - main
 env:
-  GO: 1.14.x
+  GO: 1.16
 
 jobs:
   tests:
@@ -22,6 +22,6 @@ jobs:
         if: always()
         run: cat test.log
       - name: Codecov
-        uses: codecov/codecov-action@v1.4.0
+        uses: codecov/codecov-action@v1.4.1
         with:
           file: ./coverage.out
