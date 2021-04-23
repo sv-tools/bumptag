@@ -1,5 +1,8 @@
 project_name: bumptag
 
+gomod:
+  proxy: true
+
 release:
   github:
     owner: sv-tools
@@ -130,8 +133,11 @@ brews:
       owner: sv-tools
       name: homebrew-apps
     folder: Formula
-    homepage: https://github.com/sv-tools/grade
+    homepage: "{{ .GitURL }}"
     description: bumptag is a tool to increment a version and to create a git tag with an annotation
+    license: MIT
+    dependencies:
+      - name: git
     install: bin.install "{{ .ProjectName }}"
     test: assert_equal `#{bin}/{{ .ProjectName }} --version`, "{{ .ProjectName }} version v#{version}"
 
