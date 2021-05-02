@@ -1,13 +1,37 @@
 name: "Code Analysis"
 
 on:
+  push:
+    tags:
+      - v*
+    branches:
+      - main
   pull_request:
+  schedule:
+    - cron: "0 0 * * 0"
 
 env:
   GO: 1.16
 
 jobs:
-  Nancy:
+  CodeQL:
+    # CodeQL runs on ubuntu-latest, windows-latest, and macos-latest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Initializes the CodeQL tools for scanning.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v1
+        with:
+          languages: go
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v1
+
+  UnitTests:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,11 +43,13 @@ jobs:
         with:
           go-version: ${{ env.GO }}
 
-      - name: Prepare go list
-        run: go list -json -m all > go.list
+      - name: Run Unit Tests
+        run: go test -race -cover -coverprofile=coverage.out -covermode=atomic
 
-      - name: Run Nancy
-        uses: sonatype-nexus-community/nancy-github-action@v1.0.2
+      - name: Codecov
+        uses: codecov/codecov-action@v1.4.1
+        with:
+          file: ./coverage.out
 
   GolangCI-Lint:
     runs-on: ubuntu-latest
@@ -44,25 +70,9 @@ jobs:
           skip-build-cache: true
           skip-go-installation: true
 
-  CodeQL:
-    # CodeQL runs on ubuntu-latest, windows-latest, and macos-latest
+  Nancy:
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      # Initializes the CodeQL tools for scanning.
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v1
-        with:
-          languages: go
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v1
-
-  UnitTests:
-    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -72,10 +82,8 @@ jobs:
         with:
           go-version: ${{ env.GO }}
 
-      - name: Unit Tests
-        run: go test -race -cover -coverprofile=coverage.out -covermode=atomic -cpu 1,2 -bench . -benchmem ./...
+      - name: Prepare go list
+        run: go list -json -m all > go.list
 
-      - name: Codecov
-        uses: codecov/codecov-action@v1.4.1
-        with:
-          file: ./coverage.out
+      - name: Run Nancy
+        uses: sonatype-nexus-community/nancy-github-action@v1.0.2
