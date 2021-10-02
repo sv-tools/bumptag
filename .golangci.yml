@@ -7,9 +7,7 @@ linters:
     - gofmt
     - misspell
     - gosec
-    - maligned
     - unconvert
-    - golint
     - gocognit
     - gocyclo
   fast: true
@@ -17,8 +15,6 @@ linters:
 linters-settings:
   misspell:
     locale: US
-  golint:
-    min-confidence: 0
   govet:
     check-shadowing: false
   goimports:
