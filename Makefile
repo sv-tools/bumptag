@@ -32,5 +32,4 @@ lint:
 
 tidy:
 	@echo "$(OK_COLOR)==> Updating go.mod...$(NO_COLOR)"
-	@rm go.sum || true
 	@go mod tidy
